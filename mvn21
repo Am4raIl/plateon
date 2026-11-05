@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+JAVA_HOME="${PLATEON_JAVA_HOME:-/usr/lib/jvm/java-21-openjdk}"
+if [[ ! -x "$JAVA_HOME/bin/java" || ! -x "$JAVA_HOME/bin/javac" ]]; then
+  printf 'Java 21 não encontrado em %s. Defina PLATEON_JAVA_HOME para o JDK 21.\n' "$JAVA_HOME" >&2
+  exit 1
+fi
+if [[ $("$JAVA_HOME/bin/javac" -version 2>&1) != javac\ 21* ]]; then
+  printf 'O JDK em %s não é Java 21.\n' "$JAVA_HOME" >&2
+  exit 1
+fi
+export JAVA_HOME
+export PATH="$JAVA_HOME/bin:$PATH"
+cd "$PROJECT_DIR"
+
+if command -v mvn >/dev/null 2>&1; then
+  exec mvn "$@"
+fi
+exec "$PROJECT_DIR/mvnw" "$@"
