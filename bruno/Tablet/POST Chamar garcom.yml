@@ -1,0 +1,33 @@
+info:
+  name: POST Chamar garcom
+  type: http
+  seq: 10
+
+
+http:
+  method: POST
+  url: "{{base_url}}/mesa/chamados"
+
+  body:
+    type: json
+    data: |-
+      {
+        "tipo": "AJUDA"
+      }
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('chamado_id', res.body.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

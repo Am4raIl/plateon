@@ -1,0 +1,27 @@
+info:
+  name: PATCH Disponibilidade
+  type: http
+  seq: 5
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/produtos/{{produto_novo_id}}/disponibilidade"
+
+  body:
+    type: json
+    data: |-
+      {
+        "disponivel": false
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

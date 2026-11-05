@@ -1,0 +1,29 @@
+info:
+  name: PATCH Mesa
+  type: http
+  seq: 4
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/mesas/{{mesa_nova_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "numero": 99,
+        "capacidade": 6,
+        "ativa": true
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

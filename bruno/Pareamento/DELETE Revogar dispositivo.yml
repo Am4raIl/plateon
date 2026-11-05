@@ -1,0 +1,20 @@
+info:
+  name: DELETE Revogar dispositivo
+  type: http
+  seq: 6
+
+
+http:
+  method: DELETE
+  url: "{{base_url}}/admin/dispositivos/{{dispositivo_id}}"
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

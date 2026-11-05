@@ -1,0 +1,32 @@
+info:
+  name: PATCH Adicional
+  type: http
+  seq: 10
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/adicionais/{{adicional_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "nome": "Extra Bruno alterado",
+        "preco": 3.5,
+        "ativo": true,
+        "categorias": [
+          "ENTRADAS"
+        ]
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

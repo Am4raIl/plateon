@@ -1,0 +1,38 @@
+info:
+  name: POST Adicional
+  type: http
+  seq: 9
+
+
+http:
+  method: POST
+  url: "{{base_url}}/admin/adicionais"
+
+  body:
+    type: json
+    data: |-
+      {
+        "nome": "Extra Bruno",
+        "preco": 2.5,
+        "ativo": true,
+        "categorias": [
+          "ENTRADAS"
+        ]
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('adicional_id', res.body.id);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

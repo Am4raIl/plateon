@@ -1,0 +1,35 @@
+info:
+  name: PATCH Produto
+  type: http
+  seq: 4
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/produtos/{{produto_novo_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "nome": "Produto Bruno alterado",
+        "descricao": "Atualizado",
+        "categoria": "ENTRADAS",
+        "preco": 14.5,
+        "imagemUrl": null,
+        "estacao": "COZINHA",
+        "tempoPreparoEstimadoMin": 10,
+        "disponivel": true,
+        "ativo": true
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

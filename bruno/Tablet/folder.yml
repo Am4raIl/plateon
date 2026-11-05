@@ -1,0 +1,7 @@
+info:
+  name: Tablet
+  type: folder
+  seq: 4
+
+request:
+  auth: inherit

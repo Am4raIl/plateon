@@ -1,0 +1,27 @@
+info:
+  name: PATCH Atender chamado
+  type: http
+  seq: 2
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/chamados/{{chamado_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "status": "ATENDIDO"
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

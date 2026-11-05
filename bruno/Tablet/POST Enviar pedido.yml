@@ -1,0 +1,33 @@
+info:
+  name: POST Enviar pedido
+  type: http
+  seq: 8
+
+
+http:
+  method: POST
+  url: "{{base_url}}/mesa/pedidos/{{pedido_id}}/enviar"
+
+  body:
+    type: json
+    data: |-
+      {
+        "observacaoGeral": "Pedido de teste"
+      }
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('versao', res.body.versao);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

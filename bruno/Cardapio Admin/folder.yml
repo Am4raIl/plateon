@@ -1,0 +1,7 @@
+info:
+  name: Cardapio Admin
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit

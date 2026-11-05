@@ -1,0 +1,8 @@
+variables:
+  - name: base_url
+    value: http://localhost:8081/api/v1
+  - name: admin_username
+    value: admin
+  - name: admin_password
+    value: defina-aqui
+    secret: true

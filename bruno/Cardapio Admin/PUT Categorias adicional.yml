@@ -1,0 +1,28 @@
+info:
+  name: PUT Categorias adicional
+  type: http
+  seq: 11
+
+
+http:
+  method: PUT
+  url: "{{base_url}}/admin/adicionais/{{adicional_id}}/categorias"
+
+  body:
+    type: json
+    data: |-
+      [
+        "ENTRADAS",
+        "PORCOES"
+      ]
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

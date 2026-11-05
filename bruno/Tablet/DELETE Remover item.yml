@@ -1,0 +1,26 @@
+info:
+  name: DELETE Remover item
+  type: http
+  seq: 7
+
+
+http:
+  method: DELETE
+  url: "{{base_url}}/mesa/pedidos/{{pedido_id}}/itens/{{item_id}}"
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('versao', res.body.versao);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

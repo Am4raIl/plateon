@@ -1,0 +1,27 @@
+info:
+  name: PATCH Dispositivo
+  type: http
+  seq: 5
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/admin/dispositivos/{{dispositivo_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "nome": "Tablet da mesa teste"
+      }
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

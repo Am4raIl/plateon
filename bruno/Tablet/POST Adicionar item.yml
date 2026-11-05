@@ -1,0 +1,36 @@
+info:
+  name: POST Adicionar item
+  type: http
+  seq: 5
+
+
+http:
+  method: POST
+  url: "{{base_url}}/mesa/pedidos/{{pedido_id}}/itens"
+
+  body:
+    type: json
+    data: |-
+      {
+        "produtoId": "{{produto_id}}",
+        "quantidade": 1,
+        "observacao": "Sem cebola",
+        "adicionaisIds": []
+      }
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) { bru.setVar('versao', res.body.versao); if (res.body.itens?.length) bru.setVar('item_id', res.body.itens[0].id); }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

@@ -1,0 +1,26 @@
+info:
+  name: POST Cancelar pedido
+  type: http
+  seq: 9
+
+
+http:
+  method: POST
+  url: "{{base_url}}/mesa/pedidos/{{pedido_id}}/cancelar"
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('versao', res.body.versao);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

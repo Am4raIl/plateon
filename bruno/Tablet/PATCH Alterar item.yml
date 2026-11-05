@@ -1,0 +1,36 @@
+info:
+  name: PATCH Alterar item
+  type: http
+  seq: 6
+
+
+http:
+  method: PATCH
+  url: "{{base_url}}/mesa/pedidos/{{pedido_id}}/itens/{{item_id}}"
+
+  body:
+    type: json
+    data: |-
+      {
+        "produtoId": "{{produto_id}}",
+        "quantidade": 2,
+        "observacao": "Sem cebola",
+        "adicionaisIds": []
+      }
+
+  auth:
+    type: bearer
+    token: "{{tablet_token}}"
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('versao', res.body.versao);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

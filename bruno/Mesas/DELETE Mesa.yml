@@ -1,0 +1,20 @@
+info:
+  name: DELETE Mesa
+  type: http
+  seq: 5
+
+
+http:
+  method: DELETE
+  url: "{{base_url}}/admin/mesas/{{mesa_nova_id}}"
+
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

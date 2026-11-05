@@ -1,0 +1,25 @@
+info:
+  name: POST Solicitar codigo
+  type: http
+  seq: 1
+
+
+http:
+  method: POST
+  url: "{{base_url}}/dispositivos/pareamento"
+
+  auth:
+    type: none
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) { bru.setVar('solicitacao_id', res.body.solicitacaoId); bru.setVar('codigo', res.body.codigo); }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

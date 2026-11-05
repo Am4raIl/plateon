@@ -1,0 +1,33 @@
+info:
+  name: POST Login
+  type: http
+  seq: 1
+
+
+http:
+  method: POST
+  url: "{{base_url}}/auth/login"
+
+  body:
+    type: json
+    data: |-
+      {
+        "username": "{{admin_username}}",
+        "senha": "{{admin_password}}"
+      }
+
+  auth:
+    type: none
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        if (res.status === 200 && res.body) bru.setVar('jwt', res.body.token);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
