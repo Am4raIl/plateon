@@ -1,0 +1,18 @@
+info:
+  name: GET Resumos de comandas
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{base_url}}/admin/comandas/resumos?pagina=0&tamanho=20&status=ATIVAS"
+  auth:
+    type: bearer
+    token: "{{jwt}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

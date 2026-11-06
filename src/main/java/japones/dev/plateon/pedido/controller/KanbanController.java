@@ -3,6 +3,8 @@ package japones.dev.plateon.pedido.controller;
 import japones.dev.plateon.pedido.service.PedidoService;
 import japones.dev.plateon.pedido.service.KanbanService;
 import japones.dev.plateon.pedido.service.PedidoEventos;
+import japones.dev.plateon.seguranca.AcessoEventos;
+import org.springframework.security.core.Authentication;
 
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +17,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RequestMapping("/api/v1")
 public class KanbanController {
     private final KanbanService service; private final PedidoEventos events; private final PedidoService pedidos;
-    public KanbanController(KanbanService service,PedidoEventos events,PedidoService pedidos) { this.service=service;this.events=events;this.pedidos=pedidos; }
+    private final AcessoEventos acesso;
+    public KanbanController(KanbanService service,PedidoEventos events,PedidoService pedidos,AcessoEventos acesso) {
+        this.service=service;this.events=events;this.pedidos=pedidos;this.acesso=acesso;
+    }
     @Operation(summary="Kanban por estação",description="Filtre por COZINHA ou BAR; um pedido pode conter itens de ambas.")
     @SecurityRequirement(name="equipe")
     @GetMapping("/admin/kanban") public KanbanService.Kanban listar(@RequestParam(required=false) String estacao) { return service.listar(estacao); }
@@ -23,9 +28,11 @@ public class KanbanController {
     @SecurityRequirement(name="equipe")
     @PatchMapping("/admin/kanban/{id}/status") public PedidoService.PedidoView mudar(@PathVariable String id,@Valid @RequestBody KanbanService.Transicao input) { return service.transicao(id,input); }
     @SecurityRequirement(name="equipe")
-    @GetMapping("/admin/kanban/eventos") public SseEmitter eventos() { return events.kanban(); }
+    @GetMapping("/admin/kanban/eventos") public SseEmitter eventos(Authentication auth) { return events.kanban(acesso.equipe(auth)); }
     @SecurityRequirement(name="tablet")
-    @GetMapping("/mesa/pedidos/{id}/eventos") public SseEmitter pedidoEventos(HttpServletRequest request,@PathVariable String id) {
-        pedidos.pedido(id,(String)request.getAttribute("mesaId")); return events.pedido(id);
+    @GetMapping("/mesa/pedidos/{id}/eventos") public SseEmitter pedidoEventos(HttpServletRequest request,@PathVariable String id,Authentication auth) {
+        String mesaId=(String)request.getAttribute("mesaId");
+        pedidos.pedido(id,mesaId);
+        return events.pedido(id,acesso.tablet(auth.getName(),mesaId));
     }
 }

@@ -26,6 +26,8 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.web.DefaultBearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -62,6 +64,7 @@ public class SecurityConfig {
         if (!origins.isBlank()) cors.setAllowedOrigins(Arrays.stream(origins.split(",")).map(String::trim).toList());
         cors.setAllowedMethods(List.of("GET","POST","PATCH","PUT","DELETE","OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization","Content-Type"));
+        cors.setExposedHeaders(List.of("Retry-After"));
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cors);
         var defaultResolver = new DefaultBearerTokenResolver();
@@ -71,6 +74,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request,response,ex) -> problem(response,401,"Não autenticado"))
                 .accessDeniedHandler((request,response,ex) -> problem(response,403,"Acesso negado")))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .securityContext(s -> s.securityContextRepository(new RequestAttributeSecurityContextRepository()))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/actuator/health", "/actuator/info", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/imagens/produtos/*.svg").permitAll()
@@ -87,7 +91,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request,response,ex) -> problem(response,401,"Token inválido ou expirado"))
                 .jwt(j -> j.jwtAuthenticationConverter(jwt -> {
                     String role = jwt.getClaimAsString("papel");
-                    return new UsernamePasswordAuthenticationToken(jwt.getSubject(), jwt,
+                    return new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(jwt,
                         List.of(new SimpleGrantedAuthority("ROLE_" + role)));
                 })));
         http.addFilterBefore(rateLimitFilter, BearerTokenAuthenticationFilter.class);
@@ -118,8 +122,12 @@ public class SecurityConfig {
                 if (last == null || last.isBefore(clock.instant().minusSeconds(30)))
                     db.jdbc().update("UPDATE dispositivo SET ultimo_acesso_em=? WHERE id=? AND (ultimo_acesso_em IS NULL OR ultimo_acesso_em<?)",
                         db.ts(clock.instant()), row.get("id"),db.ts(clock.instant().minusSeconds(30)));
-                org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
-                    new UsernamePasswordAuthenticationToken(row.get("id"), null, List.of(new SimpleGrantedAuthority("ROLE_DISPOSITIVO"))));
+                var contexto=SecurityContextHolder.createEmptyContext();
+                contexto.setAuthentication(new UsernamePasswordAuthenticationToken(row.get("id"),null,
+                    List.of(new SimpleGrantedAuthority("ROLE_DISPOSITIVO"))));
+                SecurityContextHolder.setContext(contexto);
+                // Preserva autenticação apenas nesta requisição, inclusive no encerramento assíncrono do SSE.
+                new RequestAttributeSecurityContextRepository().saveContext(contexto,request,response);
             }
             try { chain.doFilter(request, response); } finally { org.slf4j.MDC.remove("numeroMesa"); }
         }
@@ -132,11 +140,29 @@ public class SecurityConfig {
         @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
                 throws ServletException, IOException {
             String path = request.getRequestURI();
-            if (path.equals("/api/v1/auth/login") || path.startsWith("/api/v1/dispositivos/pareamento")) {
-                String key = request.getRemoteAddr();
+            String operacao=null;
+            int limite=10;
+            if (request.getMethod().equals("POST") && path.equals("/api/v1/auth/login")) operacao="login";
+            else if (request.getMethod().equals("POST") && path.equals("/api/v1/dispositivos/pareamento")) operacao="pareamento";
+            else if (request.getMethod().equals("GET") && path.startsWith("/api/v1/dispositivos/pareamento/")) {
+                // Tablets atrás do mesmo IP têm cotas de polling independentes por solicitação.
+                operacao="consulta:"+path.substring("/api/v1/dispositivos/pareamento/".length());
+                limite=60;
+            }
+            if (operacao!=null) {
+                String key = operacao+":"+request.getRemoteAddr();
                 long minute = clock.instant().getEpochSecond()/60;
-                Window next = windows.compute(key, (k,v) -> v == null || v.minute != minute ? new Window(minute,1) : new Window(minute,v.count+1));
-                if (next.count > 10) { problem(response,429,"Limite de requisições excedido"); return; }
+                boolean excedeuTotal=false;
+                if(operacao.startsWith("consulta:")) {
+                    var global=windows.compute("consultas:"+request.getRemoteAddr(),
+                        (k,v) -> v == null || v.minute != minute ? new Window(minute,1) : new Window(minute,v.count+1));
+                    excedeuTotal=global.count>600;
+                }
+                Window next = excedeuTotal ? null : windows.compute(key, (k,v) -> v == null || v.minute != minute ? new Window(minute,1) : new Window(minute,v.count+1));
+                if (excedeuTotal || next.count > limite) {
+                    response.setHeader("Retry-After",Long.toString(60-clock.instant().getEpochSecond()%60));
+                    problem(response,429,"Limite de requisições excedido"); return;
+                }
                 if (windows.size() > 10000) windows.entrySet().removeIf(e -> e.getValue().minute < minute-2);
             }
             chain.doFilter(request,response);

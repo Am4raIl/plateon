@@ -142,7 +142,9 @@ class FluxoIntegrationTest {
             var instanteProximoDia=proximoDia.atTime(5,0).atZone(ZoneId.of("America/Sao_Paulo")).toInstant();
             var servicoNoProximoDia=new PedidoService(db,Clock.fixed(instanteProximoDia,ZoneOffset.UTC),
                 context.getBean(Tempo.class),context.getBean(AdicionalPolicy.class),context,
-                context.getBean(PlatformTransactionManager.class));
+                context.getBean(PlatformTransactionManager.class),context.getBean(PedidoConsulta.class),
+                context.getBean(japones.dev.plateon.conta.service.ComandaConsulta.class),
+                context.getBean(japones.dev.plateon.conta.service.ComandaRegras.class));
             var reiniciado=servicoNoProximoDia.enviar(primeiraMesa[0],proximo.id(),new PedidoService.Envio(null));
             assertEquals(proximoDia,reiniciado.diaOperacional());
             assertEquals(1,reiniciado.numeroDiario());
@@ -155,6 +157,9 @@ class FluxoIntegrationTest {
                 assertEquals("PAGA",jpaPedido.getComanda().getStatus().name());
                 assertEquals(1,jpaPedido.getComanda().getMesa().getNumero());
                 assertEquals(new BigDecimal("10.00"),jpaPedido.getComanda().getTaxaServicoPercentual());
+                assertEquals(new BigDecimal("16.00"),jpaPedido.getComanda().getSubtotalFechamento());
+                assertEquals(new BigDecimal("1.60"),jpaPedido.getComanda().getTaxaFechamento());
+                assertEquals(new BigDecimal("17.60"),jpaPedido.getComanda().getTotalFechamento());
                 var itens=em.createQuery("select i from ItemPedido i where i.pedido.id=:id",ItemPedido.class)
                     .setParameter("id",UUID.fromString(draft.id())).getResultList();
                 assertEquals(1,itens.size());

@@ -23,6 +23,21 @@ class MigrationIntegrationTest {
         String username=mysql==null ? "plateon" : mysql.getUsername();
         String password=mysql==null ? "plateon" : mysql.getPassword();
         try {
+            // Simula uma instalação existente em V9 antes de aplicar a nova migration.
+            String url=TestMysqlUrl.utc(external);
+            org.flywaydb.core.Flyway.configure().dataSource(url,username,password).target("9").load().migrate();
+            var legado=new org.springframework.jdbc.core.JdbcTemplate(
+                new org.springframework.jdbc.datasource.DriverManagerDataSource(url,username,password));
+            String mesaLegada=java.util.UUID.randomUUID().toString();
+            String produtoLegado=java.util.UUID.randomUUID().toString();
+            String contaLegada=java.util.UUID.randomUUID().toString();
+            String pedidoLegado=java.util.UUID.randomUUID().toString();
+            var instante=Timestamp.from(Instant.now());
+            legado.update("INSERT INTO mesa(id,numero,capacidade,ativa) VALUES(?,9000,4,1)",mesaLegada);
+            legado.update("INSERT INTO produto(id,nome,categoria,preco,estacao,tempo_preparo_estimado_min) VALUES(?,'Legado','HAMBURGUERES',16,'COZINHA',10)",produtoLegado);
+            legado.update("INSERT INTO comanda(id,mesa_id,status,aberta_em,fechada_em,taxa_servico_percentual,couvert) VALUES(?,?,'PAGA',?,?,10,2)",contaLegada,mesaLegada,instante,instante);
+            legado.update("INSERT INTO pedido(id,comanda_id,status,criado_em,atualizado_em) VALUES(?,?,'ENTREGUE',?,?)",pedidoLegado,contaLegada,instante,instante);
+            legado.update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,nome_produto,preco_unitario,estacao) VALUES(?,?,?,2,'Legado',16,'COZINHA')",java.util.UUID.randomUUID().toString(),pedidoLegado,produtoLegado);
             try(var context=new SpringApplicationBuilder(PlateonApplication.class)
                     .run("--spring.datasource.url="+TestMysqlUrl.utc(external),
                         "--spring.datasource.username="+username,
@@ -30,7 +45,9 @@ class MigrationIntegrationTest {
                         "--restaurante.jwt.segredo=integration_test_secret_32_characters_long",
                         "--restaurante.seed.referencia=false","--server.port=0")) {
                 var db=context.getBean(Sql.class);
-                assertEquals(8,db.jdbc().queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE success=1",Integer.class));
+                assertEquals(10,db.jdbc().queryForObject("SELECT COUNT(*) FROM flyway_schema_history WHERE success=1",Integer.class));
+                assertEquals("HAMBURGUERES",db.str(db.one("SELECT categoria FROM item_pedido WHERE pedido_id=?",pedidoLegado),"categoria"));
+                assertEquals(new java.math.BigDecimal("37.20"),db.one("SELECT total_fechamento FROM comanda WHERE id=?",contaLegada).get("total_fechamento"));
                 String mesa=db.id(),mesa2=db.id();
                 db.jdbc().update("INSERT INTO mesa(id,numero,capacidade,ativa) VALUES(?,1,4,1)",mesa);
                 assertThrows(DataIntegrityViolationException.class,() -> db.jdbc().update("INSERT INTO mesa(id,numero,capacidade,ativa) VALUES(?,1,4,1)",mesa2));

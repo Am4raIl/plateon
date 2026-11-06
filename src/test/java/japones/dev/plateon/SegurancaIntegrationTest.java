@@ -4,7 +4,11 @@ import java.net.URI;
 import java.net.http.*;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.Duration;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assumptions;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -33,6 +37,63 @@ class SegurancaIntegrationTest {
         var response=request("POST","/auth/login","{\"username\":\""+username+"\",\"senha\":\"dev12345678\"}",null);
         assertEquals(200,response.status()); return (String)object(response.body()).get("token");
     }
+    private HttpResponse<InputStream> stream(String path,String token) throws Exception {
+        var response=http.send(HttpRequest.newBuilder(URI.create(base+path)).timeout(Duration.ofSeconds(5))
+            .header("Authorization","Bearer "+token).header("Accept","text/event-stream").GET().build(),HttpResponse.BodyHandlers.ofInputStream());
+        assertEquals(200,response.statusCode());
+        return response;
+    }
+    private String evento(BufferedReader reader) throws Exception {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                var texto=new StringBuilder();
+                for(String linha;(linha=reader.readLine())!=null;) {
+                    if(linha.isEmpty() && !texto.isEmpty()) break;
+                    texto.append(linha);
+                }
+                return texto.toString();
+            } catch(IOException ex) { throw new UncheckedIOException(ex); }
+        }).get(5,TimeUnit.SECONDS);
+    }
+    private void streamEncerrado(BufferedReader reader) throws Exception {
+        assertTrue(CompletableFuture.supplyAsync(() -> {
+            try { while(reader.readLine()!=null) {} return true; }
+            catch(IOException ex) { throw new UncheckedIOException(ex); }
+        }).get(5,TimeUnit.SECONDS));
+    }
+    private void verificarEventosERevogacao(org.springframework.context.ConfigurableApplicationContext context,
+            String gerente,String cozinha,List<Map<String,Object>> devices) throws Exception {
+        var db=context.getBean(japones.dev.plateon.compartilhado.Sql.class);
+        var eventos=context.getBean(japones.dev.plateon.pedido.service.PedidoEventos.class);
+        var tablet=devices.stream().filter(d -> d.get("nome").equals("Demo tablet 3")).findFirst().orElseThrow();
+        String pedido=db.str(db.one("SELECT p.id FROM pedido p JOIN comanda c ON c.id=p.comanda_id WHERE c.mesa_id=? AND p.status='RECEBIDO' LIMIT 1",tablet.get("mesaId")),"id");
+        try(var equipe=stream("/admin/kanban/eventos",cozinha).body();
+            var mesa=stream("/mesa/pedidos/"+pedido+"/eventos","dev-tablet-3").body()) {
+            var equipeReader=new BufferedReader(new InputStreamReader(equipe,StandardCharsets.UTF_8));
+            var mesaReader=new BufferedReader(new InputStreamReader(mesa,StandardCharsets.UTF_8));
+            assertTrue(evento(equipeReader).contains("conectado"));
+            assertTrue(evento(mesaReader).contains("conectado"));
+            var tx=new org.springframework.transaction.support.TransactionTemplate(context.getBean(org.springframework.transaction.PlatformTransactionManager.class));
+            tx.executeWithoutResult(status -> {
+                context.publishEvent(new japones.dev.plateon.pedido.service.PedidoEventos.Evento(pedido,"IGNORAR_ROLLBACK"));
+                status.setRollbackOnly();
+            });
+            eventos.heartbeat();
+            assertTrue(evento(equipeReader).contains("heartbeat"));
+            assertTrue(evento(mesaReader).contains("heartbeat"));
+            assertEquals(200,request("POST","/mesa/pedidos/"+pedido+"/cancelar",null,"dev-tablet-3").status());
+            assertTrue(evento(equipeReader).contains("CANCELADO"));
+            assertTrue(evento(mesaReader).contains("CANCELADO"));
+            assertEquals(200,request("DELETE","/admin/dispositivos/"+tablet.get("id"),null,gerente).status());
+            String usuario=db.str(db.one("SELECT id FROM usuario WHERE username='dev_cozinha_1'"),"id");
+            assertEquals(200,request("DELETE","/admin/usuarios/"+usuario,null,gerente).status());
+            eventos.heartbeat();
+            streamEncerrado(equipeReader);
+            streamEncerrado(mesaReader);
+            assertEquals(403,request("GET","/admin/kanban/eventos",null,cozinha).status());
+            assertEquals(401,request("GET","/mesa/pedidos/"+pedido+"/eventos",null,"dev-tablet-3").status());
+        }
+    }
     @Test void papelIsolamentoPareamentoERevogacao() throws Exception {
         String external=System.getenv("PLATEON_SECURITY_TEST_JDBC");
         MySQLContainer mysql=null;
@@ -53,6 +114,12 @@ class SegurancaIntegrationTest {
             assertEquals(403,request("GET","/admin/produtos",null,cozinha).status());
             assertEquals(403,request("GET","/admin/kanban",null,caixa).status());
             assertEquals(200,request("GET","/admin/chamados",null,garcom).status());
+            var resumos=object(request("GET","/admin/comandas/resumos",null,garcom).body());
+            var resumo=(Map<String,Object>)((List<?>)resumos.get("itens")).getFirst();
+            assertFalse(resumo.containsKey("pedidos"));
+            var detalhe=object(request("GET","/admin/comandas/"+resumo.get("id"),null,garcom).body());
+            assertTrue(detalhe.containsKey("pedidos"));
+            assertEquals(new BigDecimal(detalhe.get("total").toString()),new BigDecimal(resumo.get("total").toString()));
             assertEquals(401,request("GET","/admin/mesas",null,"dev-tablet-1").status());
             assertEquals(401,request("GET","/mesa/estado",null,gerente).status());
             var relatorio=request("GET","/admin/dashboard/fechamento-diario",null,gerente);
@@ -103,6 +170,7 @@ class SegurancaIntegrationTest {
             assertNotNull(entregue.get("token"));
             assertEquals(410,request("GET","/dispositivos/pareamento/"+solicitacaoId,null,null).status());
             var devices=array(request("GET","/admin/dispositivos",null,gerente).body());
+            verificarEventosERevogacao(context,gerente,cozinha,devices);
             var d1=devices.stream().filter(d -> d.get("nome").equals("Demo tablet 1")).findFirst().orElseThrow();
             var d2=devices.stream().filter(d -> d.get("nome").equals("Demo tablet 2")).findFirst().orElseThrow();
             assertEquals(409,request("PATCH","/admin/dispositivos/"+d1.get("id"),"{\"mesaId\":\""+d2.get("mesaId")+"\"}",gerente).status());

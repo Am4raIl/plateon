@@ -13,7 +13,7 @@ export ADMIN_PASSWORD='uma-senha-forte-com-8-ou-mais-caracteres'
 docker compose up --build -d
 ```
 
-O Compose inicia MySQL 8.4, aguarda o health check e inicia a aplicação. Flyway aplica `V1` a `V9` no primeiro boot. O seed de referência cria 12 mesas, 43 produtos listados em `docs.md`, 20 adicionais, imagens SVG genéricas para cada produto e o gerente informado pelas variáveis. Reinícios não duplicam os dados. As imagens ficam no volume `product_images`; no host, o diretório padrão é `./data/product-images` e pode ser alterado com `PRODUCT_IMAGES_DIR`.
+O Compose inicia MySQL 8.4, aguarda o health check e inicia a aplicação. Flyway aplica `V1` a `V10` no primeiro boot. O seed de referência cria 12 mesas, 43 produtos listados em `docs.md`, 20 adicionais, imagens SVG genéricas para cada produto e o gerente informado pelas variáveis. Reinícios não duplicam os dados. As imagens ficam no volume `product_images`; no host, o diretório padrão é `./data/product-images` e pode ser alterado com `PRODUCT_IMAGES_DIR`.
 
 Neste computador há `podman-compose` em vez do comando `docker`. Para subir tudo com Podman, use `podman-compose -f compose.yaml up --build -d` após definir as mesmas três variáveis acima.
 
@@ -36,7 +36,9 @@ podman-compose -f compose.yaml up -d mysql
 ./mvn21 spring-boot:run
 ```
 
-Para testar: `./mvn21 test`. O script usa o Maven instalado ou o wrapper do projeto. Os testes de integração usam Testcontainers e precisam de um Docker Engine acessível; os testes unitários rodam sem Docker. `FluxoIntegrationTest`, `MigrationIntegrationTest` e `SegurancaIntegrationTest` aceitam, respectivamente, `PLATEON_TEST_JDBC`, `PLATEON_MIGRATION_TEST_JDBC` e `PLATEON_SECURITY_TEST_JDBC`, cada uma apontando para um **banco MySQL 8.4 vazio e dedicado**, permitindo rodá-los sem Testcontainers. Os testes acrescentam `connectionTimeZone=UTC` à URL JDBC quando ela ainda não define esse parâmetro; mantenha UTC também nas URLs da aplicação para gravar corretamente as colunas `DATETIME`.
+Para testar: `./mvn21 test`. O script usa o Maven instalado ou o wrapper do projeto. Os testes de integração usam Testcontainers e precisam de um Docker Engine acessível; os testes unitários rodam sem Docker. `FluxoIntegrationTest`, `MigrationIntegrationTest`, `SegurancaIntegrationTest` e `ConfiabilidadeIntegrationTest` aceitam, respectivamente, `PLATEON_TEST_JDBC`, `PLATEON_MIGRATION_TEST_JDBC`, `PLATEON_SECURITY_TEST_JDBC` e `PLATEON_RELIABILITY_TEST_JDBC`, cada uma apontando para um **banco MySQL 8.4 vazio e dedicado**, permitindo rodá-los sem Testcontainers. Os testes acrescentam `connectionTimeZone=UTC` à URL JDBC quando ela ainda não define esse parâmetro; mantenha UTC também nas URLs da aplicação para gravar corretamente as colunas `DATETIME`. O MySQL precisa das tabelas de fuso horário para os relatórios com `America/Sao_Paulo`.
+
+A suíte verifica também fechamento forçado, bloqueio financeiro, envio concorrente com fechamento, rollback de pagamentos, preservação de categorias, médias com retrocessos, consultas em lote, limites de pareamento e SSE com revogação de acesso. Em instalações existentes, a V10 preenche os snapshots financeiros e de categoria com os dados disponíveis; alterações históricas anteriores não podem ser reconstruídas.
 
 Para gerar cobertura sem alterar o `pom.xml`:
 
@@ -111,7 +113,7 @@ O estado final da mesa deve ser `LIVRE`. Para acompanhar eventos SSE, faça `GET
 
 ## Configuração e migrations
 
-As propriedades `restaurante.*` ficam em `src/main/resources/application.properties`; variáveis `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `CORS_ORIGINS` e `SPRING_PROFILES_ACTIVE` podem ser definidas no ambiente. `JWT_SECRET` precisa ter pelo menos 32 bytes. Para mudar esquema, crie `src/main/resources/db/migration/V10__descricao.sql`; não edite migrations já aplicadas. Hibernate usa `ddl-auto=validate` e Flyway nunca executa `clean`.
+As propriedades `restaurante.*` ficam em `src/main/resources/application.properties`; variáveis `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `CORS_ORIGINS` e `SPRING_PROFILES_ACTIVE` podem ser definidas no ambiente. `JWT_SECRET` precisa ter pelo menos 32 bytes. Para mudar esquema, crie `src/main/resources/db/migration/V11__descricao.sql`; não edite migrations já aplicadas. Hibernate usa `ddl-auto=validate` e Flyway nunca executa `clean`.
 
 Consulte `docs/DECISOES.md` para decisões de implementação.
 

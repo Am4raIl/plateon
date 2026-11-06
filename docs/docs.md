@@ -73,14 +73,14 @@ Erros de validação e negócio retornam application/problem+json, geralmente co
 | 409 | Recarregar o recurso e seu estado/versao antes de oferecer nova ação. |
 | 410 | Código expirado ou token de pareamento já entregue; criar nova solicitação se necessário. |
 | 422 | Corrigir regra de negócio, como produto indisponível, adicional inválido, motivo ausente ou soma de pagamentos. |
-| 429 | Aguardar antes de tentar login/pareamento novamente. O limite é de 10 chamadas por minuto por IP nesses endpoints públicos. |
+| 429 | Aguardar os segundos indicados no header Retry-After. Login e criação de pareamento têm cotas independentes de 10/minuto por IP; polling tem 60/minuto por IP e solicitação e teto agregado de 600/minuto por IP. |
 | 500 | Exibir falha genérica e permitir nova tentativa. |
 
 ## 3. Formatos de resposta reutilizados
 
 Os exemplos das Views seguintes mostram **todos os campos** de cada formato. IDs e datas são ilustrativos. Um campo opcional pode ser null. Listas sem paginação usam arrays desses objetos.
 
-As quatro listas administrativas paginadas devolvem um objeto com este formato (o exemplo usa produtos):
+As listas administrativas paginadas devolvem um objeto com este formato (o exemplo usa produtos):
 
 ~~~json
 {
@@ -285,6 +285,7 @@ O campo id das rotas de pedido é o UUID do **pedido**, não numeroDiario. Nenhu
 | PATCH /admin/dispositivos/{id} | DispositivoInput parcial | DispositivoView atualizado |
 | DELETE /admin/dispositivos/{id} | Sem corpo | 200 vazio; revoga o token imediatamente |
 | GET /admin/comandas?pagina=0&tamanho=20&status=ATIVAS | Sem corpo; parâmetros opcionais | Página de ComandaView; status padrão ATIVAS |
+| GET /admin/comandas/resumos?pagina=0&tamanho=20&status=ATIVAS | Mesmos filtros da listagem completa | Página de resumos com id, status, numeroMesa, abertaEm, subtotal, taxaServico e total; sem pedidos/itens |
 | POST /admin/comandas | AbrirComandaInput | ComandaView; também cria rascunho |
 | GET /admin/comandas/{id} | Sem corpo | ComandaView, inclusive paga |
 | POST /admin/comandas/{id}/fechar | FechamentoInput | FechamentoView |
@@ -441,7 +442,7 @@ AbrirComandaInput para POST /admin/comandas:
 {"mesaId":"66666666-6666-4666-8666-666666666666"}
 ~~~
 
-Isso abre/recupera a comanda e cria/recupera um rascunho. No tablet, POST /mesa/pedidos faz a mesma abertura usando a mesa do token. Status da comanda: ABERTA, AGUARDANDO_PAGAMENTO, PAGA e CANCELADA. Não há endpoint público para cancelar uma comanda. GET /admin/comandas aceita `status=ATIVAS` (padrão: ABERTA e AGUARDANDO_PAGAMENTO), ABERTA, AGUARDANDO_PAGAMENTO, PAGA ou CANCELADA; use `status=PAGA` para consultar o histórico. Também é possível ler uma comanda por ID em /admin/comandas/{id}.
+Isso abre/recupera a comanda e cria/recupera um rascunho. No tablet, POST /mesa/pedidos faz a mesma abertura usando a mesa do token. Status da comanda: ABERTA, AGUARDANDO_PAGAMENTO, PAGA e CANCELADA. Não há endpoint público para cancelar uma comanda. GET /admin/comandas aceita `status=ATIVAS` (padrão: ABERTA e AGUARDANDO_PAGAMENTO), ABERTA, AGUARDANDO_PAGAMENTO, PAGA ou CANCELADA; use `status=PAGA` para consultar o histórico. Também é possível ler uma comanda por ID em /admin/comandas/{id}. Para telas de listagem, prefira GET /admin/comandas/resumos com os mesmos filtros e paginação; esse endpoint omite pedidos e itens, preservando os totais. A listagem completa continua disponível com o formato anterior.
 
 FechamentoInput para POST /admin/comandas/{id}/fechar:
 
@@ -459,6 +460,8 @@ FechamentoInput para POST /admin/comandas/{id}/fechar:
 Formas possíveis: DINHEIRO, PIX, CARTAO_CREDITO e CARTAO_DEBITO. A soma dos valores **aplicados** deve ser exatamente total da comanda. valorRecebido só pode ser informado para DINHEIRO e deve ser maior ou igual a valor. O troco é a soma de (valorRecebido - valor) de pagamentos em dinheiro; não é armazenado. Sem gateway de pagamento: essa rota **registra** um pagamento confirmado pela equipe.
 
 Todos os pedidos da comanda precisam estar ENTREGUE ou CANCELADO. Só GERENTE pode usar forcar=true para ignorar pendências. Com removerTaxa=true, a taxa percentual é zerada antes de calcular o total. Para mostrar a conta antes de cobrar, pode-se chamar a rota com pagamentos=[]; isso muda o status para AGUARDANDO_PAGAMENTO e devolve o total atualizado. Em seguida, faça GET /mesa/comanda ou GET /admin/comandas/{id} e envie outra chamada com os pagamentos exatos. Enquanto aguarda pagamento, POST /mesa/pedidos rejeita novo rascunho com 409.
+
+AGUARDANDO_PAGAMENTO também bloqueia edição, remoção e envio de itens de rascunhos existentes, cancelamentos e retrocessos no Kanban. Os pedidos enviados podem continuar avançando até ENTREGUE. No fechamento forçado com pagamento, rascunhos não cobrados passam a CANCELADO com histórico; repetir o envio desses IDs apenas devolve CANCELADO, sem gerar número diário. Pedidos cobrados podem ser preparados e entregues após o fechamento forçado, mas não cancelados nem retrocedidos. Subtotal, taxa e total da conta paga são preservados no fechamento. Falhas de validação de pagamentos revertem integralmente a operação.
 
 FechamentoView:
 
@@ -579,13 +582,15 @@ GET /admin/dashboard/fechamento-diario aceita dia=YYYY-MM-DD. Sem dia, usa o dia
 
 As quantias do exemplo são ilustrativas e não precisam fechar entre si. totalVendido e as vendas por item/categoria/hora usam o dia operacional do **pedido** e excluem pedidos CANCELADO; totalVendido soma itens, sem taxa e couvert. totalCancelados e valorCancelado se referem a pedidos enviados e cancelados nesse dia. taxaServicoArrecadada, ticketMedioPorComanda e vendasPorFormaPagamento usam o dia operacional de **fechamento da comanda**. vendasPorHora usa hora local do restaurante (0 a 23). Os tempos médios vêm do histórico RECEBIDO -> PRONTO e PRONTO -> ENTREGUE; podem ser null quando não há dados. pedidosAtrasados conta somente pedidos atualmente em RECEBIDO/EM_PREPARO do dia selecionado.
 
+Vendas por categoria usam a categoria preservada no item ao montar o pedido. Reclassificar o produto não modifica os itens anteriores. Taxa arrecadada e ticket médio usam os valores preservados no fechamento. Nas médias, cada pedido não cancelado conta uma vez por etapa: usa-se a última conclusão registrada e o início correspondente mais recente anterior a ela. Isso evita multiplicar amostras quando o gerente retrocede um pedido.
+
 ## 6. Fluxos que o frontend deve implementar
 
 ### 6.1 Parear um tablet novo
 
 1. Sem token armazenado, mostrar tela com um código obtido por POST /dispositivos/pareamento. Guarde solicitacaoId em memória e mostre expiraEm como contagem regressiva.
 2. Um GARCOM ou GERENTE logado escolhe uma mesa ativa no painel e envia codigo + mesaId a POST /admin/dispositivos/pareamento/aprovar. Se a mesa já tiver tablet ativo, resolver a duplicidade no painel de dispositivos antes de aprovar.
-3. No tablet, consultar GET /dispositivos/pareamento/{solicitacaoId} a cada aproximadamente 8–10 segundos. Isso respeita o limite público de 10 requisições/minuto por IP. PENDENTE mantém a tela; CONSUMIDA com token conclui.
+3. No tablet, consultar GET /dispositivos/pareamento/{solicitacaoId} a cada aproximadamente 2–5 segundos. O polling tem cota própria de 60 requisições/minuto por IP e solicitação, separada do login e da criação do código. PENDENTE mantém a tela; CONSUMIDA com token conclui. Em 429, respeite Retry-After.
 4. Guardar o token no armazenamento persistente do tablet, apagar o código da UI e abrir a experiência da mesa. O UUID da solicitação não é o token. Não depender de uma segunda leitura do token.
 5. Se retornar 410, mostrar opção para gerar outro código. Se chamadas /mesa/** retornarem 401, remover o token local e iniciar pareamento novamente.
 
@@ -627,6 +632,8 @@ data: {"pedidoId":"33333333-3333-4333-8333-333333333333","status":"PRONTO"}
 ~~~
 
 O evento pedido é enviado **depois do commit** da mudança no banco. Use fetch com header Authorization: Bearer; EventSource nativo não permite definir esse header. Ao conectar, reconectar ou receber pedido, refaça GET /admin/kanban ou GET /mesa/comanda conforme a tela. O stream não envia snapshot inicial, não tem replay nem IDs de evento. Feche a conexão ao sair da tela ou trocar de usuário. A publicação em memória presume uma instância do backend.
+
+Comentários `:heartbeat` são enviados a cada 15 segundos e podem ser ignorados pelo parser. Cada conexão dura no máximo 30 minutos; reconecte com espera progressiva e consulte novamente os dados. O acesso é revalidado antes de cada evento/heartbeat: revogação ou mudança de mesa do dispositivo, desativação da mesa/usuário, mudança de papel ou expiração do JWT encerram o stream. Ao receber 401/403 na reconexão, interrompa as tentativas e refaça autenticação/pareamento conforme o caso.
 
 ## 7. Ambiente de desenvolvimento e limites conhecidos
 

@@ -6,8 +6,14 @@
 - MySQL 8.4; UUID em `CHAR(36)`; colunas geradas no lugar de índices parciais; migrations forward-only.
 - Sem Lombok, sem cache de token, sem refresh JWT e sem gateway de pagamentos.
 - SSE usa Bearer no header Authorization e `fetch` streaming; emissores ficam em memória numa instância.
+- SSE envia heartbeat a cada 15 segundos e encerra conexões após 30 minutos; o cliente reconecta e refaz a leitura HTTP. Antes de cada evento/heartbeat, revalida dispositivo/mesa ou usuário/papel/expiração do JWT. Falhas e conexões encerradas saem do registro em memória.
 - Envio idempotente pelo estado do pedido, sem tabela extra.
-- Rate limit em memória por IP. Imagens por URL. Taxa e couvert fixados na abertura da comanda.
+- Rate limit em memória: login e criação de pareamento têm cotas separadas de 10/minuto por IP; consulta de pareamento tem 60/minuto por IP e solicitação, com teto agregado de 600/minuto por IP. Respostas 429 incluem Retry-After, exposto no CORS. Imagens por URL. Taxa e couvert fixados na abertura da comanda.
+- REST e os formatos existentes são mantidos. Leituras de pedidos e comandas ficam em PedidoConsulta/ComandaConsulta e carregam relações em lote. GET /admin/comandas/resumos é uma alternativa paginada sem pedidos/itens para as telas de listagem.
+- ComandaRegras coordena mutações bloqueando comanda antes de pedido. Transações de escrita de pedidos/fechamento usam READ_COMMITTED para ler os dados atuais após esperar o bloqueio; leituras compostas usam transação de leitura.
+- AGUARDANDO_PAGAMENTO bloqueia edição/envio de rascunhos, cancelamentos e retrocessos. Pedidos já enviados podem avançar até ENTREGUE mesmo após fechamento forçado. PAGA preserva subtotal, taxa e total do fechamento; rascunhos não cobrados são cancelados com histórico no fechamento forçado. Uma requisição de envio repetida continua retornando o estado atual do mesmo pedido, sem reenviá-lo.
+- V10 preserva categoria no item e valores financeiros na comanda paga. Para dados legados, o backfill usa categoria e itens disponíveis no momento da migration: não é possível recuperar alterações históricas já perdidas. As migrations V1–V9 permanecem intactas.
+- Indicadores usam a categoria preservada no item e os valores financeiros do fechamento. Cada pedido não cancelado contribui no máximo uma vez para cada média: última conclusão da etapa e início correspondente mais recente anterior a ela, ordenados pelo histórico.
 - Troco é calculado e não persistido. Taxa e pagamentos contam no dia operacional do fechamento.
 - Logs com MDC e Actuator health/info. Seeds usam chave natural e não usam factories.
 - A lista de produtos da seção 4 soma 43 entradas, embora o texto diga 40. O seed inclui as 43 entradas listadas.

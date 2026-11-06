@@ -4,6 +4,8 @@ import japones.dev.plateon.pedido.service.PedidoEventos;
 
 import japones.dev.plateon.cardapio.domain.*;
 import japones.dev.plateon.cardapio.service.*;
+import japones.dev.plateon.conta.service.ComandaConsulta;
+import japones.dev.plateon.conta.service.ComandaRegras;
 import japones.dev.plateon.compartilhado.*;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -15,6 +17,7 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -23,12 +26,18 @@ public class PedidoService {
     private final Sql db; private final Clock clock; private final Tempo tempo; private final AdicionalPolicy policy;
     private final org.springframework.context.ApplicationEventPublisher events;
     private final TransactionTemplate transacoes;
+    private final PedidoConsulta consultas;
+    private final ComandaConsulta comandas;
+    private final ComandaRegras regras;
     @Value("${restaurante.taxa-servico:10}") private BigDecimal taxa;
     @Value("${restaurante.couvert:0.00}") private BigDecimal couvert;
     @Value("${restaurante.rascunho-ttl-minutos:30}") private long ttl;
-    public PedidoService(Sql db,Clock clock,Tempo tempo,AdicionalPolicy policy,org.springframework.context.ApplicationEventPublisher events,PlatformTransactionManager manager) {
+    public PedidoService(Sql db,Clock clock,Tempo tempo,AdicionalPolicy policy,org.springframework.context.ApplicationEventPublisher events,PlatformTransactionManager manager,
+            PedidoConsulta consultas,ComandaConsulta comandas,ComandaRegras regras) {
         this.db=db; this.clock=clock; this.tempo=tempo; this.policy=policy; this.events=events;
         this.transacoes=new TransactionTemplate(manager);
+        this.transacoes.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_READ_COMMITTED);
+        this.consultas=consultas; this.comandas=comandas; this.regras=regras;
     }
     public record AdicionalView(String id,String nome,BigDecimal preco) {}
     public record ItemView(String id,String produtoId,String nomeProduto,int quantidade,String observacao,
@@ -47,42 +56,19 @@ public class PedidoService {
         return new EstadoMesa(row==null ? "LIVRE" : db.str(row,"status").equals("ABERTA") ? "EM_ATENDIMENTO" : "AGUARDANDO_PAGAMENTO",numero);
     }
     public ComandaView comandaAtual(String mesaId) {
-        var row=db.optional("SELECT c.*,m.numero FROM comanda c JOIN mesa m ON m.id=c.mesa_id WHERE c.mesa_id=? AND c.status IN ('ABERTA','AGUARDANDO_PAGAMENTO') ORDER BY c.aberta_em DESC LIMIT 1",mesaId);
-        return row==null ? null : comanda(row);
+        return comandas.atual(mesaId);
     }
     public ComandaView comandaPorId(String id) {
-        return comanda(db.one("SELECT c.*,m.numero FROM comanda c JOIN mesa m ON m.id=c.mesa_id WHERE c.id=?",id));
-    }
-    private ComandaView comanda(Map<String,Object> row) {
-        var pedidos=db.jdbc().queryForList("SELECT * FROM pedido WHERE comanda_id=? ORDER BY criado_em",row.get("id")).stream().map(this::view).toList();
-        BigDecimal subtotal=pedidos.stream().filter(p -> !p.status().equals("CANCELADO") && !p.status().equals("RASCUNHO"))
-            .map(PedidoView::subtotal).reduce(BigDecimal.ZERO,BigDecimal::add);
-        BigDecimal taxaValor=subtotal.multiply(Validar.dinheiro(row.get("taxa_servico_percentual"))).divide(new BigDecimal("100"),2,java.math.RoundingMode.HALF_UP);
-        BigDecimal cov=Validar.dinheiro(row.get("couvert"));
-        return new ComandaView(db.str(row,"id"),db.str(row,"status"),((Number)row.get("numero")).intValue(),
-            db.instant(row,"aberta_em"),Validar.dinheiro(row.get("taxa_servico_percentual")),cov,pedidos,subtotal,taxaValor,subtotal.add(taxaValor).add(cov));
+        return comandas.porId(id);
     }
     public PedidoView pedido(String pedidoId,String mesaId) {
-        return view(db.one("SELECT p.* FROM pedido p JOIN comanda c ON c.id=p.comanda_id WHERE p.id=? AND c.mesa_id=?",pedidoId,mesaId));
+        return consultas.daMesa(pedidoId,mesaId);
     }
-    public PedidoView pedidoAdmin(String pedidoId) { return view(db.one("SELECT * FROM pedido WHERE id=?",pedidoId)); }
+    public PedidoView pedidoAdmin(String pedidoId) { return consultas.porId(pedidoId); }
     private PedidoView view(Map<String,Object> row) {
-        var items=db.jdbc().queryForList("SELECT * FROM item_pedido WHERE pedido_id=?",row.get("id")).stream().map(i -> {
-            var ads=db.jdbc().queryForList("SELECT * FROM item_adicional WHERE item_pedido_id=?",i.get("id")).stream()
-                .map(a -> new AdicionalView(db.str(a,"adicional_id"),db.str(a,"nome"),Validar.dinheiro(a.get("preco")))).toList();
-            BigDecimal unit=Validar.dinheiro(i.get("preco_unitario"));
-            BigDecimal price=ads.stream().map(AdicionalView::preco).reduce(unit,BigDecimal::add);
-            return new ItemView(db.str(i,"id"),db.str(i,"produto_id"),db.str(i,"nome_produto"),((Number)i.get("quantidade")).intValue(),
-                db.str(i,"observacao"),unit,db.str(i,"estacao"),ads,price.multiply(BigDecimal.valueOf(((Number)i.get("quantidade")).longValue())));
-        }).toList();
-        BigDecimal subtotal=items.stream().map(ItemView::subtotal).reduce(BigDecimal.ZERO,BigDecimal::add);
-        return new PedidoView(db.str(row,"id"),db.str(row,"comanda_id"),db.str(row,"status"),
-            row.get("numero_diario")==null ? null : ((Number)row.get("numero_diario")).intValue(),
-            row.get("dia_operacional")==null ? null : row.get("dia_operacional") instanceof java.sql.Date sqlDate ? sqlDate.toLocalDate() : (LocalDate)row.get("dia_operacional"),
-            db.str(row,"observacao_geral"),db.instant(row,"criado_em"),db.instant(row,"enviado_em"),
-            ((Number)row.get("version")).longValue(),items,subtotal);
+        return consultas.carregar(List.of(row)).getFirst();
     }
-    @Transactional public PedidoView rascunho(String mesaId) {
+    @Transactional(isolation=Isolation.READ_COMMITTED) public PedidoView rascunho(String mesaId) {
         db.one("SELECT id FROM mesa WHERE id=? AND ativa=1 FOR UPDATE",mesaId);
         var c=db.optional("SELECT * FROM comanda WHERE mesa_id=? AND status='ABERTA' FOR UPDATE",mesaId);
         if(c==null) {
@@ -104,7 +90,7 @@ public class PedidoService {
         }
         return view(p);
     }
-    @Transactional public PedidoView adicionar(String mesaId,String pedidoId,ItemInput input) {
+    @Transactional(isolation=Isolation.READ_COMMITTED) public PedidoView adicionar(String mesaId,String pedidoId,ItemInput input) {
         return salvarItem(mesaId,pedidoId,input,null);
     }
     private PedidoView salvarItem(String mesaId,String pedidoId,ItemInput input,String itemExistenteId) {
@@ -124,18 +110,18 @@ public class PedidoService {
             adicionais.add(a);
         }
         String itemId=itemExistenteId==null ? db.id() : itemExistenteId;
-        db.jdbc().update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,observacao,nome_produto,preco_unitario,estacao) VALUES(?,?,?,?,?,?,?,?)",
-            itemId,pedidoId,input.produtoId(),input.quantidade(),input.observacao(),produto.get("nome"),produto.get("preco"),produto.get("estacao"));
+        db.jdbc().update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,observacao,nome_produto,preco_unitario,estacao,categoria) VALUES(?,?,?,?,?,?,?,?,?)",
+            itemId,pedidoId,input.produtoId(),input.quantidade(),input.observacao(),produto.get("nome"),produto.get("preco"),produto.get("estacao"),produto.get("categoria"));
         for(var a:adicionais) db.jdbc().update("INSERT INTO item_adicional(id,item_pedido_id,adicional_id,nome,preco) VALUES(?,?,?,?,?)",db.id(),itemId,a.get("id"),a.get("nome"),a.get("preco"));
         tocar(pedidoId); return pedido(pedidoId,mesaId);
     }
-    @Transactional public PedidoView alterarItem(String mesaId,String pedidoId,String itemId,ItemInput input) {
+    @Transactional(isolation=Isolation.READ_COMMITTED) public PedidoView alterarItem(String mesaId,String pedidoId,String itemId,ItemInput input) {
         rascunhoDaMesa(mesaId,pedidoId); db.one("SELECT id FROM item_pedido WHERE id=? AND pedido_id=?",itemId,pedidoId);
         db.jdbc().update("DELETE FROM item_adicional WHERE item_pedido_id=?",itemId);
         db.jdbc().update("DELETE FROM item_pedido WHERE id=?",itemId);
         return salvarItem(mesaId,pedidoId,input,itemId);
     }
-    @Transactional public PedidoView removerItem(String mesaId,String pedidoId,String itemId) {
+    @Transactional(isolation=Isolation.READ_COMMITTED) public PedidoView removerItem(String mesaId,String pedidoId,String itemId) {
         rascunhoDaMesa(mesaId,pedidoId);
         db.jdbc().update("DELETE FROM item_adicional WHERE item_pedido_id=?",itemId);
         if(db.jdbc().update("DELETE FROM item_pedido WHERE id=? AND pedido_id=?",itemId,pedidoId)==0)
@@ -143,7 +129,9 @@ public class PedidoService {
         tocar(pedidoId); return pedido(pedidoId,mesaId);
     }
     private Map<String,Object> rascunhoDaMesa(String mesaId,String pedidoId) {
-        var p=db.one("SELECT p.* FROM pedido p JOIN comanda c ON c.id=p.comanda_id WHERE p.id=? AND c.mesa_id=? FOR UPDATE",pedidoId,mesaId);
+        var bloqueado=regras.bloquearPedido(pedidoId,mesaId);
+        regras.exigirAberta(bloqueado.statusComanda());
+        var p=bloqueado.pedido();
         Validar.exigir(db.str(p,"status").equals("RASCUNHO"),HttpStatus.CONFLICT,"Pedido já enviado"); return p;
     }
     private void tocar(String id) { db.jdbc().update("UPDATE pedido SET atualizado_em=?,version=version+1 WHERE id=?",db.ts(clock.instant()),id); }
@@ -159,8 +147,10 @@ public class PedidoService {
         throw new IllegalStateException("Tentativas de envio esgotadas");
     }
     private PedidoView enviarNaTransacao(String mesaId,String pedidoId,Envio input) {
-        var p=db.one("SELECT p.* FROM pedido p JOIN comanda c ON c.id=p.comanda_id WHERE p.id=? AND c.mesa_id=? FOR UPDATE",pedidoId,mesaId);
+        var bloqueado=regras.bloquearPedido(pedidoId,mesaId);
+        var p=bloqueado.pedido();
         if(!db.str(p,"status").equals("RASCUNHO")) return view(p);
+        regras.exigirAberta(bloqueado.statusComanda());
         Validar.exigir(db.optional("SELECT id FROM item_pedido WHERE pedido_id=? LIMIT 1",pedidoId)!=null,HttpStatus.UNPROCESSABLE_ENTITY,"Pedido vazio");
         var now=clock.instant(); var dia=tempo.diaOperacional(now);
         db.jdbc().update("INSERT IGNORE INTO contador_diario(dia_operacional,ultimo_numero) VALUES(?,0)",dia);
@@ -173,8 +163,10 @@ public class PedidoService {
         events.publishEvent(new PedidoEventos.Evento(pedidoId,"RECEBIDO"));
         return pedido(pedidoId,mesaId);
     }
-    @Transactional public PedidoView cancelar(String mesaId,String pedidoId) {
-        var p=db.one("SELECT p.* FROM pedido p JOIN comanda c ON c.id=p.comanda_id WHERE p.id=? AND c.mesa_id=? FOR UPDATE",pedidoId,mesaId);
+    @Transactional(isolation=Isolation.READ_COMMITTED) public PedidoView cancelar(String mesaId,String pedidoId) {
+        var bloqueado=regras.bloquearPedido(pedidoId,mesaId);
+        regras.exigirAberta(bloqueado.statusComanda());
+        var p=bloqueado.pedido();
         Validar.exigir(db.str(p,"status").equals("RECEBIDO"),HttpStatus.CONFLICT,"Tablet só pode cancelar pedido recebido");
         db.jdbc().update("UPDATE pedido SET status='CANCELADO',version=version+1 WHERE id=?",pedidoId);
         db.jdbc().update("INSERT INTO pedido_status_historico(pedido_id,de,para,em,motivo) VALUES(?,'RECEBIDO','CANCELADO',?,'Cancelado pelo tablet')",pedidoId,db.ts(clock.instant()));
@@ -187,13 +179,20 @@ public class PedidoService {
         db.jdbc().update("INSERT INTO chamado_garcom(id,mesa_id,tipo,status,criado_em) VALUES(?,?,?,'ABERTO',?)",id,mesaId,input.tipo(),db.ts(now));
         return new ChamadoView(id,input.tipo(),"ABERTO",now);
     }
-    @Transactional @org.springframework.scheduling.annotation.Scheduled(fixedDelay=300000) public void limparRascunhos() {
-        var rows=db.jdbc().queryForList("SELECT id FROM pedido WHERE status='RASCUNHO' AND atualizado_em < ? FOR UPDATE",db.ts(clock.instant().minusSeconds(ttl*60)));
+    @org.springframework.scheduling.annotation.Scheduled(fixedDelay=300000) public void limparRascunhos() {
+        var limite=clock.instant().minusSeconds(ttl*60);
+        var rows=db.jdbc().queryForList("SELECT id FROM pedido WHERE status='RASCUNHO' AND atualizado_em < ?",db.ts(limite));
         for(var p:rows) {
             String id=db.str(p,"id");
-            db.jdbc().update("DELETE ia FROM item_adicional ia JOIN item_pedido i ON i.id=ia.item_pedido_id WHERE i.pedido_id=?",id);
-            db.jdbc().update("DELETE FROM item_pedido WHERE pedido_id=?",id);
-            db.jdbc().update("DELETE FROM pedido WHERE id=? AND status='RASCUNHO'",id);
+            try {
+                transacoes.executeWithoutResult(tx -> {
+                    var atual=regras.bloquearPedido(id,null).pedido();
+                    if(!"RASCUNHO".equals(db.str(atual,"status")) || !db.instant(atual,"atualizado_em").isBefore(limite)) return;
+                    db.jdbc().update("DELETE ia FROM item_adicional ia JOIN item_pedido i ON i.id=ia.item_pedido_id WHERE i.pedido_id=?",id);
+                    db.jdbc().update("DELETE FROM item_pedido WHERE pedido_id=?",id);
+                    db.jdbc().update("DELETE FROM pedido WHERE id=?",id);
+                });
+            } catch(ApiException ex) { if(ex.status()!=HttpStatus.NOT_FOUND) throw ex; }
         }
     }
 }

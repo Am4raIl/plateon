@@ -21,6 +21,10 @@ public class ContaController {
     @GetMapping public Pagina<PedidoService.ComandaView> listar(@RequestParam(defaultValue="0") int pagina,
         @RequestParam(defaultValue="20") int tamanho,@RequestParam(required=false) String status) { return service.listar(pagina,tamanho,status); }
     @PostMapping public PedidoService.ComandaView abrir(@Valid @RequestBody Abrir input) { return service.abrir(input.mesaId()); }
+    @Operation(summary="Resumo paginado das comandas sem carregar pedidos e itens")
+    @GetMapping("/resumos") public Pagina<japones.dev.plateon.conta.service.ComandaConsulta.Resumo> resumos(
+        @RequestParam(defaultValue="0") int pagina,@RequestParam(defaultValue="20") int tamanho,
+        @RequestParam(required=false) String status) { return service.resumos(pagina,tamanho,status); }
     @GetMapping("/{id}") public PedidoService.ComandaView ver(@PathVariable String id) { return pedidos.comandaPorId(id); }
     @Operation(summary="Fechar comanda",description="Pagamentos aplicados devem somar exatamente o total. Exemplo: {\"pagamentos\":[{\"forma\":\"PIX\",\"valor\":17.60}],\"removerTaxa\":false,\"forcar\":false}.")
     @PostMapping("/{id}/fechar") public ContaService.FechamentoView fechar(@PathVariable String id,@Valid @RequestBody ContaService.Fechamento input) { return service.fechar(id,input); }

@@ -29,6 +29,12 @@ public class Comanda {
     private BigDecimal taxaServicoPercentual;
     @Column(name="couvert",precision=10,scale=2,nullable=false)
     private BigDecimal couvert;
+    @Column(name="subtotal_fechamento",precision=18,scale=2)
+    private BigDecimal subtotalFechamento;
+    @Column(name="taxa_fechamento",precision=18,scale=2)
+    private BigDecimal taxaFechamento;
+    @Column(name="total_fechamento",precision=18,scale=2)
+    private BigDecimal totalFechamento;
 
     protected Comanda() {}
     public Comanda(UUID id) { this.id=id; }
@@ -46,4 +52,7 @@ public class Comanda {
     public void setTaxaServicoPercentual(BigDecimal taxaServicoPercentual) { this.taxaServicoPercentual=taxaServicoPercentual; }
     public BigDecimal getCouvert() { return couvert; }
     public void setCouvert(BigDecimal couvert) { this.couvert=couvert; }
+    public BigDecimal getSubtotalFechamento() { return subtotalFechamento; }
+    public BigDecimal getTaxaFechamento() { return taxaFechamento; }
+    public BigDecimal getTotalFechamento() { return totalFechamento; }
 }

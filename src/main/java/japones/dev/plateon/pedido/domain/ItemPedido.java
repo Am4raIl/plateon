@@ -10,6 +10,7 @@ import java.time.*;
 import java.math.BigDecimal;
 import japones.dev.plateon.cardapio.domain.Produto;
 import japones.dev.plateon.cardapio.domain.Estacao;
+import japones.dev.plateon.cardapio.domain.Categoria;
 
 @Entity
 @Table(name="item_pedido")
@@ -32,6 +33,9 @@ public class ItemPedido {
     @Enumerated(EnumType.STRING)
     @Column(name="estacao",length=20,nullable=false)
     private Estacao estacao;
+    @Enumerated(EnumType.STRING)
+    @Column(name="categoria",length=30,nullable=false)
+    private Categoria categoria;
 
     protected ItemPedido() {}
     public ItemPedido(UUID id) { this.id=id; }
@@ -51,4 +55,6 @@ public class ItemPedido {
     public void setPrecoUnitario(BigDecimal precoUnitario) { this.precoUnitario=precoUnitario; }
     public Estacao getEstacao() { return estacao; }
     public void setEstacao(Estacao estacao) { this.estacao=estacao; }
+    public Categoria getCategoria() { return categoria; }
+    public void setCategoria(Categoria categoria) { this.categoria=categoria; }
 }

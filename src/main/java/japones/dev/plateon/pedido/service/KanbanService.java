@@ -4,6 +4,7 @@ import japones.dev.plateon.pedido.service.PedidoService;
 import japones.dev.plateon.pedido.service.PedidoEventos;
 
 import japones.dev.plateon.compartilhado.*;
+import japones.dev.plateon.conta.service.ComandaRegras;
 import jakarta.validation.constraints.NotBlank;
 import java.time.*;
 import java.util.*;
@@ -17,22 +18,29 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class KanbanService {
     private final Sql db; private final Clock clock; private final PedidoService pedidos; private final ApplicationEventPublisher events;
+    private final PedidoConsulta consultas;
+    private final ComandaRegras regras;
     @Value("${restaurante.atraso-margem-min:5}") private long margem;
-    public KanbanService(Sql db,Clock clock,PedidoService pedidos,ApplicationEventPublisher events) {
+    public KanbanService(Sql db,Clock clock,PedidoService pedidos,ApplicationEventPublisher events,PedidoConsulta consultas,ComandaRegras regras) {
         this.db=db;this.clock=clock;this.pedidos=pedidos;this.events=events;
+        this.consultas=consultas;this.regras=regras;
     }
     public record Cartao(PedidoService.PedidoView pedido,int numeroMesa,long minutosDecorridos,boolean atrasado) {}
     public record Kanban(List<Cartao> recebido,List<Cartao> emPreparo,List<Cartao> pronto) {}
     public record Transicao(@NotBlank String novoStatus,String motivo,long versao) {}
     public Kanban listar(String estacao) {
         Validar.exigir(estacao==null || Set.of("COZINHA","BAR").contains(estacao),HttpStatus.BAD_REQUEST,"Estação inválida");
-        var rows=db.jdbc().queryForList("SELECT p.id,p.enviado_em,m.numero FROM pedido p JOIN comanda c ON c.id=p.comanda_id JOIN mesa m ON m.id=c.mesa_id WHERE p.status IN ('RECEBIDO','EM_PREPARO','PRONTO') ORDER BY p.enviado_em");
+        String sql="SELECT p.*,m.numero,(SELECT MAX(pr.tempo_preparo_estimado_min) FROM item_pedido i JOIN produto pr ON pr.id=i.produto_id WHERE i.pedido_id=p.id) AS preparo_maximo FROM pedido p JOIN comanda c ON c.id=p.comanda_id JOIN mesa m ON m.id=c.mesa_id WHERE p.status IN ('RECEBIDO','EM_PREPARO','PRONTO')";
+        if(estacao!=null) sql+=" AND EXISTS (SELECT 1 FROM item_pedido i WHERE i.pedido_id=p.id AND i.estacao=?)";
+        sql+=" ORDER BY p.enviado_em,p.id";
+        var rows=estacao==null ? db.jdbc().queryForList(sql) : db.jdbc().queryForList(sql,estacao);
+        var lista=consultas.carregar(rows);
         var cards=new ArrayList<Cartao>();
-        for(var row:rows) {
-            var pedido=pedidos.pedidoAdmin(db.str(row,"id"));
-            if(estacao!=null && pedido.itens().stream().noneMatch(i -> i.estacao().equals(estacao))) continue;
+        for(int n=0;n<rows.size();n++) {
+            var row=rows.get(n);
+            var pedido=lista.get(n);
             long minutos=Duration.between(db.instant(row,"enviado_em"),clock.instant()).toMinutes();
-            Integer max=db.jdbc().queryForObject("SELECT MAX(pr.tempo_preparo_estimado_min) FROM item_pedido i JOIN produto pr ON pr.id=i.produto_id WHERE i.pedido_id=?",Integer.class,pedido.id());
+            Integer max=row.get("preparo_maximo")==null ? null : ((Number)row.get("preparo_maximo")).intValue();
             boolean atrasado=!pedido.status().equals("PRONTO") && minutos>(max==null ? 0 : max)+margem;
             cards.add(new Cartao(pedido,((Number)row.get("numero")).intValue(),minutos,atrasado));
         }
@@ -49,8 +57,9 @@ public class KanbanService {
             default -> List.of();
         };
     }
-    @Transactional public PedidoService.PedidoView transicao(String id,Transicao input) {
-        var row=db.one("SELECT * FROM pedido WHERE id=? FOR UPDATE",id);
+    @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED) public PedidoService.PedidoView transicao(String id,Transicao input) {
+        var bloqueado=regras.bloquearPedido(id,null);
+        var row=bloqueado.pedido();
         String atual=db.str(row,"status"), novo=input.novoStatus();
         long versao=((Number)row.get("version")).longValue();
         var details=Map.<String,Object>of("estadoAtual",atual,"transicoesPermitidas",permitidas(atual));
@@ -60,6 +69,8 @@ public class KanbanService {
         boolean retroceder=gerente && List.of("RECEBIDO","EM_PREPARO","PRONTO","ENTREGUE").contains(atual)
             && List.of("RECEBIDO","EM_PREPARO","PRONTO").contains(novo)
             && ordem(novo)<ordem(atual);
+        if(novo.equals("CANCELADO") || retroceder) regras.exigirAberta(bloqueado.statusComanda());
+        Validar.exigir(Set.of("ABERTA","AGUARDANDO_PAGAMENTO","PAGA").contains(bloqueado.statusComanda()),HttpStatus.CONFLICT,"Comanda encerrada");
         if(!avancar && !retroceder) throw new ApiException(HttpStatus.CONFLICT,"Transição inválida",details);
         if((novo.equals("CANCELADO") || retroceder) && (input.motivo()==null || input.motivo().isBlank()))
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY,"Motivo obrigatório");

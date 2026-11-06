@@ -49,12 +49,12 @@ public class DemoSeeder implements ApplicationRunner {
         var produtos=db.jdbc().queryForList("SELECT * FROM produto WHERE ativo=1 ORDER BY nome");
         var produto=db.one("SELECT * FROM produto WHERE nome='X-Burger'");
         for(int dias=1;dias<=45;dias++) {
-            var produtoHistorico=produtos.get((dias-1)%produtos.size());
-            int quantidade=1+dias%3;
+            var produtoHistorico=dias==1 ? produto : produtos.get((dias-1)%produtos.size());
+            int quantidade=dias==1 ? 1 : 1+dias%3;
             String marcador="Demo historico "+dias;
             if(db.optional("SELECT id FROM pedido WHERE observacao_geral=?",marcador)!=null) continue;
             Instant quando=clock.instant().minus(Duration.ofDays(dias));
-            var mesa=db.one("SELECT id FROM mesa WHERE numero=?",dias);
+            var mesa=db.one("SELECT id FROM mesa WHERE numero=?",(dias-1)%12+1);
             if(dias<=5 && db.optional("SELECT id FROM comanda WHERE mesa_id=? AND status='PAGA' AND fechada_em>=? AND fechada_em<?",
                 mesa.get("id"),db.ts(quando.minusSeconds(3600)),db.ts(quando.plusSeconds(3600)))!=null) continue;
             String comanda=db.id(),pedido=db.id(),item=db.id();
@@ -66,13 +66,16 @@ public class DemoSeeder implements ApplicationRunner {
             int numero=((Number)db.one("SELECT ultimo_numero FROM contador_diario WHERE dia_operacional=?",dia).get("ultimo_numero")).intValue();
             db.jdbc().update("INSERT INTO pedido(id,comanda_id,status,numero_diario,dia_operacional,observacao_geral,criado_em,atualizado_em,enviado_em) VALUES(?,?,'ENTREGUE',?,?,?,?,?,?)",
                 pedido,comanda,numero,dia,marcador,db.ts(quando.minusSeconds(2000)),db.ts(quando),db.ts(quando.minusSeconds(1800)));
-            db.jdbc().update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,nome_produto,preco_unitario,estacao) VALUES(?,?,?,?,?,?,?)",
-                item,pedido,produtoHistorico.get("id"),quantidade,produtoHistorico.get("nome"),produtoHistorico.get("preco"),produtoHistorico.get("estacao"));
+            db.jdbc().update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,nome_produto,preco_unitario,estacao,categoria) VALUES(?,?,?,?,?,?,?,?)",
+                item,pedido,produtoHistorico.get("id"),quantidade,produtoHistorico.get("nome"),produtoHistorico.get("preco"),produtoHistorico.get("estacao"),produtoHistorico.get("categoria"));
             historico(pedido,"RASCUNHO","RECEBIDO",quando.minusSeconds(1800));
             historico(pedido,"RECEBIDO","EM_PREPARO",quando.minusSeconds(1500));
             historico(pedido,"EM_PREPARO","PRONTO",quando.minusSeconds(900));
             historico(pedido,"PRONTO","ENTREGUE",quando.minusSeconds(600));
             BigDecimal total=Validar.dinheiro(produtoHistorico.get("preco")).multiply(BigDecimal.valueOf(quantidade)).multiply(new BigDecimal("1.10"));
+            BigDecimal subtotal=Validar.dinheiro(produtoHistorico.get("preco")).multiply(BigDecimal.valueOf(quantidade));
+            db.jdbc().update("UPDATE comanda SET subtotal_fechamento=?,taxa_fechamento=?,total_fechamento=? WHERE id=?",
+                subtotal,total.subtract(subtotal),total,comanda);
             if(dias==1) {
                 db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"PIX",total.divide(new BigDecimal("2")),db.ts(quando),caixa);
                 db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"DINHEIRO",total.divide(new BigDecimal("2")),db.ts(quando),caixa);
