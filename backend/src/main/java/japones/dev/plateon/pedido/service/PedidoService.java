@@ -30,7 +30,6 @@ public class PedidoService {
     private final ComandaConsulta comandas;
     private final ComandaRegras regras;
     @Value("${restaurante.taxa-servico:10}") private BigDecimal taxa;
-    @Value("${restaurante.couvert:0.00}") private BigDecimal couvert;
     @Value("${restaurante.rascunho-ttl-minutos:30}") private long ttl;
     public PedidoService(Sql db,Clock clock,Tempo tempo,AdicionalPolicy policy,org.springframework.context.ApplicationEventPublisher events,PlatformTransactionManager manager,
             PedidoConsulta consultas,ComandaConsulta comandas,ComandaRegras regras) {
@@ -76,7 +75,7 @@ public class PedidoService {
                 HttpStatus.CONFLICT,"Mesa aguardando pagamento");
             String id=db.id();
             try { db.jdbc().update("INSERT INTO comanda(id,mesa_id,status,aberta_em,taxa_servico_percentual,couvert) VALUES(?,?,'ABERTA',?,?,?)",
-                id,mesaId,db.ts(clock.instant()),taxa,couvert); }
+                id,mesaId,db.ts(clock.instant()),taxa,db.one("SELECT valor FROM configuracao_couvert WHERE id=1").get("valor")); }
             catch(DataIntegrityViolationException ex) { c=db.one("SELECT * FROM comanda WHERE mesa_id=? AND status='ABERTA'",mesaId); }
             if(c==null) c=db.one("SELECT * FROM comanda WHERE id=?",id);
         }

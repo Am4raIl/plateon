@@ -26,6 +26,8 @@ public class ContaController {
         @RequestParam(defaultValue="0") int pagina,@RequestParam(defaultValue="20") int tamanho,
         @RequestParam(required=false) String status) { return service.resumos(pagina,tamanho,status); }
     @GetMapping("/{id}") public PedidoService.ComandaView ver(@PathVariable String id) { return pedidos.comandaPorId(id); }
-    @Operation(summary="Fechar comanda",description="Pagamentos aplicados devem somar exatamente o total. Exemplo: {\"pagamentos\":[{\"forma\":\"PIX\",\"valor\":17.60}],\"removerTaxa\":false,\"forcar\":false}.")
+    @Operation(summary="Fechar comanda",description="Pagamentos aplicados devem somar exatamente o total. Em dinheiro, valorRecebido pode superar valor para calcular troco. Exemplo: {\"pagamentos\":[{\"forma\":\"PIX\",\"valor\":17.60}],\"removerTaxa\":false,\"removerCouvert\":false,\"forcar\":false}.")
     @PostMapping("/{id}/fechar") public ContaService.FechamentoView fechar(@PathVariable String id,@Valid @RequestBody ContaService.Fechamento input) { return service.fechar(id,input); }
+    @PostMapping("/{id}/retomar") public PedidoService.ComandaView retomar(@PathVariable String id) { return service.retomar(id); }
+    @PostMapping("/{id}/reabrir") public PedidoService.ComandaView reabrir(@PathVariable String id,@Valid @RequestBody ContaService.Reabertura input) { return service.reabrir(id,input); }
 }

@@ -18,13 +18,16 @@ public class ComandaConsulta {
     private final PedidoConsulta pedidos;
     public ComandaConsulta(Sql db, PedidoConsulta pedidos) { this.db = db; this.pedidos = pedidos; }
 
-    public record Resumo(String id,String status,int numeroMesa,Instant abertaEm,
+    public record Resumo(String id,String status,int numeroMesa,Instant abertaEm,Instant atualizadaEm,
         BigDecimal subtotal,BigDecimal taxaServico,BigDecimal total) {}
 
     public List<Resumo> resumosPorIds(List<String> ids) {
         if(ids.isEmpty()) return List.of();
         var rows=db.jdbc().queryForList("""
-            SELECT c.*,m.numero,COALESCE((
+            SELECT c.*,m.numero,CAST(GREATEST(c.aberta_em,COALESCE(c.atualizada_em,c.aberta_em),COALESCE(c.fechada_em,c.aberta_em),
+              COALESCE((SELECT MAX(p.atualizado_em) FROM pedido p WHERE p.comanda_id=c.id),c.aberta_em),
+              COALESCE((SELECT MAX(h.em) FROM pedido_status_historico h JOIN pedido p ON p.id=h.pedido_id WHERE p.comanda_id=c.id),c.aberta_em)) AS DATETIME(6)) AS ultima_atualizacao,
+              COALESCE((
               SELECT SUM((i.preco_unitario+COALESCE((SELECT SUM(a.preco) FROM item_adicional a WHERE a.item_pedido_id=i.id),0))*i.quantidade)
               FROM pedido p JOIN item_pedido i ON i.pedido_id=p.id
               WHERE p.comanda_id=c.id AND p.status NOT IN ('RASCUNHO','CANCELADO')
@@ -35,7 +38,7 @@ public class ComandaConsulta {
         for(var r:rows) {
             var valores=valores(r,Validar.dinheiro(r.get("subtotal_atual")));
             var resumo=new Resumo(db.str(r,"id"),db.str(r,"status"),((Number)r.get("numero")).intValue(),
-                db.instant(r,"aberta_em"),valores.subtotal(),valores.taxa(),valores.total());
+                db.instant(r,"aberta_em"),db.instant(r,"ultima_atualizacao"),valores.subtotal(),valores.taxa(),valores.total());
             porId.put(resumo.id(),resumo);
         }
         return ids.stream().map(porId::get).toList();

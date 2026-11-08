@@ -27,13 +27,18 @@ public class ContaService {
     }
     public record PagamentoInput(@NotBlank String forma,@NotNull @DecimalMin("0.01") @Digits(integer=8,fraction=2) BigDecimal valor,
         @Digits(integer=8,fraction=2) BigDecimal valorRecebido) {}
-    public record Fechamento(List<@Valid PagamentoInput> pagamentos,boolean removerTaxa,boolean forcar) {}
+    public record Fechamento(List<@Valid PagamentoInput> pagamentos,boolean removerTaxa,boolean removerCouvert,boolean forcar) {
+        public Fechamento(List<PagamentoInput> pagamentos,boolean removerTaxa,boolean forcar) {
+            this(pagamentos,removerTaxa,false,forcar);
+        }
+    }
     public record FechamentoView(PedidoService.ComandaView comanda,BigDecimal troco) {}
+    public record Reabertura(@NotBlank String motivo) {}
     private boolean gerente() { return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_GERENTE")); }
-    private void caixa() {
+    private void receber() {
         boolean autorizado=SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-            .anyMatch(a -> Set.of("ROLE_CAIXA","ROLE_GERENTE").contains(a.getAuthority()));
-        Validar.exigir(autorizado,HttpStatus.FORBIDDEN,"Permissão de caixa necessária");
+            .anyMatch(a -> Set.of("ROLE_GARCOM","ROLE_GERENTE").contains(a.getAuthority()));
+        Validar.exigir(autorizado,HttpStatus.FORBIDDEN,"Permissão de recebimento necessária");
     }
     private void garcom() {
         boolean autorizado=SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
@@ -61,12 +66,13 @@ public class ContaService {
     }
     public PedidoService.ComandaView abrir(String mesaId) { garcom(); pedidos.rascunho(mesaId); return pedidos.comandaAtual(mesaId); }
     @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED) public FechamentoView fechar(String id,Fechamento input) {
-        caixa(); var row=db.one("SELECT * FROM comanda WHERE id=? FOR UPDATE",id);
+        receber(); var row=db.one("SELECT * FROM comanda WHERE id=? FOR UPDATE",id);
         Validar.exigir(Set.of("ABERTA","AGUARDANDO_PAGAMENTO").contains(db.str(row,"status")),HttpStatus.CONFLICT,"Comanda não está aberta");
         var pendentes=db.jdbc().queryForList("SELECT status FROM pedido WHERE comanda_id=? AND status NOT IN ('ENTREGUE','CANCELADO')",id);
         Validar.exigir(pendentes.isEmpty() || input.forcar() && gerente(),HttpStatus.CONFLICT,"Ainda existem pedidos não entregues");
-        if(input.removerTaxa()) db.jdbc().update("UPDATE comanda SET taxa_servico_percentual=0 WHERE id=?",id);
-        db.jdbc().update("UPDATE comanda SET status='AGUARDANDO_PAGAMENTO' WHERE id=?",id);
+        if(input.removerTaxa()) db.jdbc().update("UPDATE comanda SET taxa_pre_fechamento=COALESCE(taxa_pre_fechamento,taxa_servico_percentual),taxa_servico_percentual=0 WHERE id=?",id);
+        if(input.removerCouvert()) db.jdbc().update("UPDATE comanda SET couvert_pre_fechamento=COALESCE(couvert_pre_fechamento,couvert),couvert=0 WHERE id=?",id);
+        db.jdbc().update("UPDATE comanda SET status='AGUARDANDO_PAGAMENTO',atualizada_em=? WHERE id=?",db.ts(clock.instant()),id);
         var pagamentos=input.pagamentos()==null ? List.<PagamentoInput>of() : input.pagamentos();
         if(pagamentos.isEmpty()) return new FechamentoView(pedidos.comandaPorId(id),BigDecimal.ZERO);
         var valores=consultas.porId(id);
@@ -93,9 +99,41 @@ public class ContaService {
                 rascunho.get("id"),db.ts(clock.instant()),SecurityContextHolder.getContext().getAuthentication().getName(),"Rascunho descartado no fechamento forçado");
         }
         db.jdbc().update("UPDATE pedido SET status='CANCELADO',atualizado_em=?,version=version+1 WHERE comanda_id=? AND status='RASCUNHO'",db.ts(clock.instant()),id);
-        db.jdbc().update("UPDATE comanda SET status='PAGA',fechada_em=?,subtotal_fechamento=?,taxa_fechamento=?,total_fechamento=? WHERE id=?",
-            db.ts(clock.instant()),valores.subtotal(),valores.taxaServico(),total,id);
+        db.jdbc().update("UPDATE comanda SET status='PAGA',fechada_em=?,atualizada_em=?,subtotal_fechamento=?,taxa_fechamento=?,total_fechamento=?,taxa_pre_fechamento=NULL,couvert_pre_fechamento=NULL WHERE id=?",
+            db.ts(clock.instant()),db.ts(clock.instant()),valores.subtotal(),valores.taxaServico(),total,id);
+        db.jdbc().update("UPDATE chamado_garcom SET status='ATENDIDO',atendido_em=?,atendido_por=? WHERE mesa_id=? AND tipo='CONTA' AND status='ABERTO' AND criado_em>=?",
+            db.ts(clock.instant()),SecurityContextHolder.getContext().getAuthentication().getName(),row.get("mesa_id"),row.get("aberta_em"));
+        db.jdbc().update("UPDATE dispositivo SET ativo=0,revogado_em=? WHERE mesa_id=? AND ativo=1",db.ts(clock.instant()),row.get("mesa_id"));
         for(var rascunho:rascunhos) events.publishEvent(new japones.dev.plateon.pedido.service.PedidoEventos.Evento(db.str(rascunho,"id"),"CANCELADO"));
         return new FechamentoView(pedidos.comandaPorId(id),troco);
+    }
+    @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public PedidoService.ComandaView retomar(String id) {
+        receber();
+        var row=db.one("SELECT status FROM comanda WHERE id=? FOR UPDATE",id);
+        Validar.exigir("AGUARDANDO_PAGAMENTO".equals(db.str(row,"status")),HttpStatus.CONFLICT,"A comanda precisa estar aguardando pagamento");
+        db.jdbc().update("UPDATE comanda SET status='ABERTA',taxa_servico_percentual=COALESCE(taxa_pre_fechamento,taxa_servico_percentual),couvert=COALESCE(couvert_pre_fechamento,couvert),taxa_pre_fechamento=NULL,couvert_pre_fechamento=NULL,atualizada_em=? WHERE id=?",db.ts(clock.instant()),id);
+        return pedidos.comandaPorId(id);
+    }
+    @Transactional(isolation=org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
+    public PedidoService.ComandaView reabrir(String id,Reabertura input) {
+        receber();
+        String motivo=input.motivo().trim();
+        Validar.exigir(motivo.length()>=3 && motivo.length()<=500,HttpStatus.UNPROCESSABLE_ENTITY,"Informe um motivo de 3 a 500 caracteres");
+        var row=db.one("SELECT * FROM comanda WHERE id=? FOR UPDATE",id);
+        Validar.exigir("PAGA".equals(db.str(row,"status")),HttpStatus.CONFLICT,"A comanda precisa estar paga para reabrir");
+        Validar.exigir(db.optional("SELECT id FROM comanda WHERE mesa_id=? AND id<>? AND status IN ('ABERTA','AGUARDANDO_PAGAMENTO')",row.get("mesa_id"),id)==null,
+            HttpStatus.CONFLICT,"A mesa ja possui outra comanda ativa");
+        Validar.exigir(db.optional("SELECT id FROM comanda WHERE mesa_id=? AND id<>? AND aberta_em>?",row.get("mesa_id"),id,row.get("aberta_em"))==null,
+            HttpStatus.CONFLICT,"Existe uma comanda mais recente para esta mesa");
+        String reaberturaId=db.id();
+        String usuario=SecurityContextHolder.getContext().getAuthentication().getName();
+        db.jdbc().update("INSERT INTO comanda_reabertura(id,comanda_id,reaberta_em,reaberta_por,motivo,total_anterior) VALUES(?,?,?,?,?,?)",
+            reaberturaId,id,db.ts(clock.instant()),usuario,motivo,row.get("total_fechamento"));
+        db.jdbc().update("INSERT INTO pagamento_estornado(id,reabertura_id,pagamento_id,forma,valor,registrado_em,registrado_por) SELECT UUID(),?,id,forma,valor,registrado_em,registrado_por FROM pagamento WHERE comanda_id=?",
+            reaberturaId,id);
+        db.jdbc().update("DELETE FROM pagamento WHERE comanda_id=?",id);
+        db.jdbc().update("UPDATE comanda SET status='ABERTA',fechada_em=NULL,atualizada_em=?,subtotal_fechamento=NULL,taxa_fechamento=NULL,total_fechamento=NULL WHERE id=?",db.ts(clock.instant()),id);
+        return pedidos.comandaPorId(id);
     }
 }
