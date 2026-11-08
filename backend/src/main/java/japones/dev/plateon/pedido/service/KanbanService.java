@@ -66,7 +66,9 @@ public class KanbanService {
         if(versao!=input.versao()) throw new ApiException(HttpStatus.CONFLICT,"Versão desatualizada",details);
         boolean gerente=SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_GERENTE"));
         boolean avancar=permitidas(atual).contains(novo);
-        boolean retroceder=gerente && List.of("RECEBIDO","EM_PREPARO","PRONTO","ENTREGUE").contains(atual)
+        boolean podeRetroceder=SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+            .anyMatch(a -> Set.of("ROLE_GARCOM","ROLE_GERENTE").contains(a.getAuthority()));
+        boolean retroceder=podeRetroceder && List.of("RECEBIDO","EM_PREPARO","PRONTO","ENTREGUE").contains(atual)
             && List.of("RECEBIDO","EM_PREPARO","PRONTO").contains(novo)
             && ordem(novo)<ordem(atual);
         if(novo.equals("CANCELADO") || retroceder) regras.exigirAberta(bloqueado.statusComanda());

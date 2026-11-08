@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import java.util.List;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,4 +23,7 @@ public class DispositivoController {
     @GetMapping("/admin/dispositivos") public List<DispositivoService.DispositivoView> listar() { return service.listar(); }
     @PatchMapping("/admin/dispositivos/{id}") public DispositivoService.DispositivoView atualizar(@PathVariable String id,@RequestBody DispositivoService.DispositivoInput input) { return service.atualizar(id,input); }
     @DeleteMapping("/admin/dispositivos/{id}") public void revogar(@PathVariable String id) { service.revogar(id); }
+    @Operation(summary="Desparear o tablet da mesa",description="Libera a mesa para um novo pareamento após a conta ser paga.")
+    @SecurityRequirement(name="tablet")
+    @PostMapping("/mesa/desparear") public void desparear(Authentication authentication) { service.revogar(authentication.getName()); }
 }

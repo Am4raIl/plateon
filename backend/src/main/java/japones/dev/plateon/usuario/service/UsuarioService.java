@@ -38,7 +38,7 @@ public class UsuarioService {
         catch(IllegalArgumentException ex) { throw new ApiException(HttpStatus.NOT_FOUND,"Usuário não encontrado"); }
     }
     private void preencher(Usuario u,UsuarioInput input,boolean novo) {
-        Validar.exigir(Set.of("COZINHA","GARCOM","CAIXA","GERENTE").contains(input.papel()),HttpStatus.UNPROCESSABLE_ENTITY,"Papel inválido");
+        Validar.exigir(Set.of("COZINHA","GARCOM","GERENTE").contains(input.papel()),HttpStatus.UNPROCESSABLE_ENTITY,"Papel inválido");
         u.setNome(input.nome());u.setUsername(input.username());u.setPapel(Papel.valueOf(input.papel()));u.setAtivo(input.ativo());
         if(novo || input.senha()!=null && !input.senha().isBlank()) {
             Validar.exigir(input.senha()!=null && input.senha().length()>=8,HttpStatus.BAD_REQUEST,"Senha deve ter pelo menos 8 caracteres");

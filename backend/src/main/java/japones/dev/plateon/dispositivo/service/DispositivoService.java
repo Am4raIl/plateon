@@ -89,9 +89,10 @@ public class DispositivoService {
     }
     private DispositivoView view(Map<String,Object> r) {
         var last=db.instant(r,"ultimo_acesso_em");
+        boolean ativo=r.get("ativo") instanceof Boolean b ? b : ((Number)r.get("ativo")).intValue()!=0;
         return new DispositivoView(db.str(r,"id"),db.str(r,"mesa_id"),((Number)r.get("numero")).intValue(),
-            db.str(r,"nome"),Boolean.TRUE.equals(r.get("ativo")),db.instant(r,"pareado_em"),last,
-            Boolean.TRUE.equals(r.get("ativo")) && last!=null && last.isAfter(clock.instant().minusSeconds(120)));
+            db.str(r,"nome"),ativo,db.instant(r,"pareado_em"),last,
+            ativo && last!=null && last.isAfter(clock.instant().minusSeconds(120)));
     }
     @Scheduled(fixedDelay=300000) public void expirar() {
         db.jdbc().update("UPDATE solicitacao_pareamento SET status='EXPIRADA' WHERE status='PENDENTE' AND expira_em < ?",db.ts(clock.instant()));

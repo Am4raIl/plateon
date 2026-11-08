@@ -23,7 +23,7 @@ public class DemoSeeder implements ApplicationRunner {
         this.db=db;this.clock=clock;this.tempo=tempo;this.passwords=passwords;this.pedidos=pedidos;
     }
     @Override @Transactional public void run(ApplicationArguments args) {
-        for(String papel:List.of("COZINHA","GARCOM","CAIXA","GERENTE")) for(int n=1;n<=2;n++) {
+        for(String papel:List.of("COZINHA","GARCOM","GERENTE")) for(int n=1;n<=2;n++) {
             String username="dev_"+papel.toLowerCase()+"_"+n;
             if(db.optional("SELECT id FROM usuario WHERE username=?",username)==null)
                 db.jdbc().update("INSERT INTO usuario(id,nome,username,senha_hash,papel,ativo) VALUES(?,?,?,?,?,1)",
@@ -45,7 +45,7 @@ public class DemoSeeder implements ApplicationRunner {
                     db.id(),codigo,n==0 ? "PENDENTE" : "EXPIRADA",db.ts(clock.instant().minusSeconds(n*1000)),
                     db.ts(clock.instant().plusSeconds(n==0 ? 600 : -100)));
         }
-        String caixa=db.str(db.one("SELECT id FROM usuario WHERE username='dev_caixa_1'"),"id");
+        String garcom=db.str(db.one("SELECT id FROM usuario WHERE username='dev_garcom_1'"),"id");
         var produtos=db.jdbc().queryForList("SELECT * FROM produto WHERE ativo=1 ORDER BY nome");
         var produto=db.one("SELECT * FROM produto WHERE nome='X-Burger'");
         for(int dias=1;dias<=45;dias++) {
@@ -77,10 +77,10 @@ public class DemoSeeder implements ApplicationRunner {
             db.jdbc().update("UPDATE comanda SET subtotal_fechamento=?,taxa_fechamento=?,total_fechamento=? WHERE id=?",
                 subtotal,total.subtract(subtotal),total,comanda);
             if(dias==1) {
-                db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"PIX",total.divide(new BigDecimal("2")),db.ts(quando),caixa);
-                db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"DINHEIRO",total.divide(new BigDecimal("2")),db.ts(quando),caixa);
+                db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"PIX",total.divide(new BigDecimal("2")),db.ts(quando),garcom);
+                db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",db.id(),comanda,"DINHEIRO",total.divide(new BigDecimal("2")),db.ts(quando),garcom);
             } else db.jdbc().update("INSERT INTO pagamento(id,comanda_id,forma,valor,registrado_em,registrado_por) VALUES(?,?,?,?,?,?)",
-                db.id(),comanda,dias%2==0 ? "CARTAO_CREDITO" : "PIX",total,db.ts(quando),caixa);
+                    db.id(),comanda,dias%2==0 ? "CARTAO_CREDITO" : "PIX",total,db.ts(quando),garcom);
         }
         var mesaCancelada=db.one("SELECT id FROM mesa WHERE numero=11");
         if(db.optional("SELECT id FROM comanda WHERE mesa_id=? AND status='CANCELADA'",mesaCancelada.get("id"))==null)
@@ -105,7 +105,7 @@ public class DemoSeeder implements ApplicationRunner {
             if(db.optional("SELECT id FROM chamado_garcom WHERE mesa_id=? AND tipo='AJUDA'",mesa)==null)
                 db.jdbc().update("INSERT INTO chamado_garcom(id,mesa_id,tipo,status,criado_em,atendido_em,atendido_por) VALUES(?,?, 'AJUDA',?,?,?,?)",
                     db.id(),mesa,n<=2 ? "ABERTO" : "ATENDIDO",db.ts(clock.instant().minusSeconds(n*60L)),
-                    n<=2 ? null : db.ts(clock.instant()),n<=2 ? null : caixa);
+                    n<=2 ? null : db.ts(clock.instant()),n<=2 ? null : garcom);
         }
     }
     private void historico(String pedido,String de,String para,Instant em) {

@@ -37,7 +37,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
     @Bean org.springframework.security.access.hierarchicalroles.RoleHierarchy roleHierarchy() {
         return org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl.fromHierarchy("""
-            ROLE_GERENTE > ROLE_CAIXA
             ROLE_GERENTE > ROLE_GARCOM
             ROLE_GARCOM > ROLE_COZINHA
             """);
@@ -81,10 +80,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/dispositivos/pareamento").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/dispositivos/pareamento/*").permitAll()
                 .requestMatchers("/api/v1/mesa/**").hasRole("DISPOSITIVO")
+                .requestMatchers(HttpMethod.GET, "/api/v1/admin/mesas", "/api/v1/admin/dispositivos").hasAnyRole("GARCOM","GERENTE")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/dispositivos/*").hasAnyRole("GARCOM","GERENTE")
                 .requestMatchers("/api/v1/admin/kanban/**").hasAnyRole("COZINHA","GARCOM","GERENTE")
                 .requestMatchers("/api/v1/admin/chamados/**", "/api/v1/admin/dispositivos/pareamento/**").hasAnyRole("GARCOM","GERENTE")
-                .requestMatchers("/api/v1/admin/comandas/**").hasAnyRole("GARCOM","CAIXA","GERENTE")
-                .requestMatchers("/api/v1/admin/pagamentos/**").hasAnyRole("CAIXA","GERENTE")
+                .requestMatchers("/api/v1/admin/comandas/**").hasAnyRole("GARCOM","GERENTE")
                 .requestMatchers("/api/v1/admin/**").hasRole("GERENTE")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o -> o.bearerTokenResolver(request -> request.getRequestURI().startsWith("/api/v1/admin/") ? defaultResolver.resolve(request) : null)
