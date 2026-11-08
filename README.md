@@ -1,183 +1,172 @@
-# Plateon
+# 🚀 Plateon — Gestão de Pedidos para Restaurantes
 
-Sistema de gestão de pedidos e atendimento para restaurantes.
+<p align="center">
+  <img src="https://img.shields.io/badge/Java_21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21" />
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot" />
+  <img src="https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/MySQL_8.4-4479A1?style=for-the-badge&logo=mysql&logoColor=white" alt="MySQL 8.4" />
+  <img src="https://img.shields.io/badge/Docker_Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose" />
+</p>
 
-O Plateon conecta o tablet disponível na mesa, a equipe do restaurante e a gerência em uma única aplicação. O cliente consulta o cardápio, monta e acompanha pedidos e solicita a conta pelo tablet. A equipe acompanha a produção em um quadro Kanban, atende chamados, administra comandas e registra pagamentos. A gerência configura mesas, produtos, adicionais, usuários, dispositivos e couvert.
+---
 
-## Para que serve
+O **Plateon** é um sistema de atendimento para restaurantes que integra tablets nas mesas, pedidos, cozinha, equipe e gerência. O cliente consulta o cardápio, envia pedidos e solicita a conta pelo tablet. A equipe acompanha a produção em um Kanban, atende chamados e administra comandas e pagamentos. A gerência configura mesas, produtos, usuários, dispositivos e couvert.
 
-- tablet fixo para cada mesa;
-- cardápio, pedidos e acompanhamento pela cozinha e pelo bar;
-- chamados de garçom e solicitação de conta;
-- comandas, taxas, couvert e pagamentos;
-- cadastro de mesas, produtos, adicionais, usuários e tablets;
-- autenticação por função e atualização em tempo real.
+## ✨ Funcionalidades
 
-## Tecnologias
+- **Tablet na mesa:** pareamento, cardápio, pedidos, acompanhamento e solicitação de conta.
+- **Produção:** Kanban para cozinha e bar, atualização em tempo real e controle de status.
+- **Atendimento:** chamados de garçom, comandas, taxas, couvert, recebimento e reabertura controlada.
+- **Gerência:** cadastro de mesas, produtos, adicionais, usuários e dispositivos.
+- **Segurança:** autenticação JWT e permissões por função.
+- **Testes:** testes unitários, integração e fluxos completos no navegador.
 
-- **Frontend:** Next.js, React, TypeScript, React Router, React Query, Zustand e Zod.
-- **Backend:** Java 21, Spring Boot, Spring Security, JWT, MySQL 8.4, Flyway e Maven.
-- **Testes:** Vitest, Testing Library, MSW, Playwright, Testcontainers e JaCoCo.
-- **Infraestrutura:** Docker Compose, com containers separados para frontend, API e banco.
+## 🛠️ Stack tecnológica
 
-## Como executar com Docker
+| Camada | Tecnologias |
+| --- | --- |
+| API | Java 21, Spring Boot, Spring Security, JWT e Flyway |
+| Web | Next.js, React, TypeScript, React Router, React Query e Zustand |
+| Dados | MySQL 8.4 |
+| Testes | Vitest, Testing Library, MSW, Playwright e Testcontainers |
+| Infraestrutura | Docker Compose, Maven e volumes persistentes |
 
-### Pré-requisitos
+## 📁 Estrutura do projeto
 
-Instale o Docker Engine com o plugin Docker Compose e deixe as portas \`3000\` e \`8081\` livres.
+~~~text
+plateon/
+├── compose.yaml       # MySQL, API e frontend
+├── backend/           # API Spring Boot, migrations e testes
+└── frontend/          # Aplicação Next.js, funcionalidades e testes E2E
+~~~
 
-Na raiz do projeto, copie a configuração de ambiente:
+## ✅ Pré-requisitos
 
-\`\`\`powershell
+- **Docker:** Docker Engine com Docker Compose.
+- **Execução local:** Java 21, Node.js 20.9+, npm e MySQL 8.4.
+- **Portas:** 3000 para o frontend e 8081 para a API.
+
+## 🚀 Rodando pela primeira vez
+
+### Com Docker Compose
+
+Na raiz do repositório, crie o arquivo de ambiente:
+
+~~~powershell
 Copy-Item .env.example .env
-\`\`\`
+~~~
 
-Abra \`.env\` e defina \`JWT_SECRET\` com pelo menos 32 caracteres, além de \`ADMIN_USERNAME\` e \`ADMIN_PASSWORD\`.
+Edite .env e defina JWT_SECRET com pelo menos 32 caracteres, ADMIN_USERNAME e ADMIN_PASSWORD.
 
-Inicie o sistema:
+Para criar as imagens e iniciar todos os serviços:
 
-\`\`\`powershell
+~~~powershell
 docker compose up --build -d
-\`\`\`
+~~~
 
-Esse comando cria as imagens e inicia MySQL, API e frontend em segundo plano. As migrations do Flyway são aplicadas automaticamente.
+Use esse comando na primeira execução ou quando alterar o Dockerfile ou as dependências da imagem.
 
-Para acompanhar a inicialização:
+| Serviço | Endereço |
+| --- | --- |
+| Aplicação web | <http://localhost:3000> |
+| API | <http://localhost:8081> |
+| Health check | <http://localhost:8081/actuator/health> |
 
-\`\`\`powershell
+Depois que as imagens já existirem, inicie os containers sem reconstruí-las:
+
+~~~powershell
+docker compose up -d
+~~~
+
+Para acompanhar os logs da API e do frontend:
+
+~~~powershell
 docker compose logs -f app frontend
-\`\`\`
+~~~
 
-Acesse:
+Para parar os containers preservando os volumes e os dados:
 
-- Aplicação: <http://localhost:3000>
-- API: <http://localhost:8081>
-- Health check: <http://localhost:8081/actuator/health>
-
-Para parar preservando os dados:
-
-\`\`\`powershell
+~~~powershell
 docker compose down
-\`\`\`
+~~~
 
-Para remover também os volumes do banco e das imagens:
+Para parar os containers e apagar também os volumes persistentes:
 
-\`\`\`powershell
+~~~powershell
 docker compose down -v
-\`\`\`
+~~~
 
-> \`down -v\` apaga os dados persistidos. Use-o apenas para recriar o banco do zero.
+> Use down -v somente quando quiser recriar o banco e as imagens do zero.
 
-Para criar dados de demonstração, adicione \`SPRING_PROFILES_ACTIVE=dev\` ao \`.env\`. Esse perfil é somente para desenvolvimento.
+Para criar dados de demonstração, adicione SPRING_PROFILES_ACTIVE=dev ao .env. Esse perfil é destinado somente ao desenvolvimento.
 
-## Como executar sem Docker
+### Desenvolvimento local
 
-Instale Node.js 20.9+, Java 21, MySQL 8.4 e Git. Crie um banco chamado \`pedidos_mesa\` e um usuário com acesso a ele.
+Crie o banco pedidos_mesa no MySQL e configure as variáveis da API na pasta backend:
 
-### 1. Configurar a API
-
-Na pasta \`backend\`, configure as variáveis:
-
-\`\`\`powershell
+~~~powershell
 $env:DB_URL="jdbc:mysql://localhost:3306/pedidos_mesa?connectionTimeZone=UTC"
 $env:DB_USERNAME="plateon"
 $env:DB_PASSWORD="plateon"
 $env:JWT_SECRET="uma-chave-local-com-pelo-menos-32-caracteres"
 $env:ADMIN_USERNAME="admin"
 $env:ADMIN_PASSWORD="uma-senha-local-forte"
-\`\`\`
+~~~
 
-Elas informam à API como acessar o banco e quais credenciais usar para o administrador inicial.
+Inicie a API:
 
-### 2. Iniciar a API
-
-\`\`\`powershell
-Set-Location backend
+~~~powershell
+cd backend
 .\mvnw.cmd spring-boot:run
-\`\`\`
+~~~
 
-O comando instala dependências, aplica as migrations e inicia a API na porta \`8081\`. Mantenha o terminal aberto.
+Em outro terminal, instale as dependências e inicie o frontend:
 
-### 3. Iniciar o frontend
-
-Em outro terminal, na raiz do projeto:
-
-\`\`\`powershell
-Set-Location frontend
+~~~powershell
+cd frontend
 Copy-Item .env.example .env.local
 npm ci
 npm run dev
-\`\`\`
+~~~
 
-\`npm ci\` instala as dependências do lockfile. \`npm run dev\` inicia o Next.js na porta \`3000\` e encaminha \`/api/v1\` para a API local.
+Acesse <http://localhost:3000>. Para testar em um tablet na mesma rede, use npm run dev -- --hostname 0.0.0.0 e abra http://IP-DO-COMPUTADOR:3000.
 
-Acesse <http://localhost:3000>. Para testar em um tablet na mesma rede:
+## 🔑 Credenciais de demonstração
 
-\`\`\`powershell
-npm run dev -- --hostname 0.0.0.0
-\`\`\`
+Quando o perfil dev estiver ativo:
 
-Depois, abra \`http://IP-DO-COMPUTADOR:3000\` no tablet.
+| Usuário | Senha | Ambiente |
+| --- | --- | --- |
+| dev_cozinha_1 | dev12345678 | Desenvolvimento |
+| dev_garcom_1 | dev12345678 | Desenvolvimento |
+| dev_gerente_1 | dev12345678 | Desenvolvimento |
 
-## Comandos de desenvolvimento
+Não use essas credenciais fora do ambiente local.
 
-Na pasta \`frontend\`:
+## 🧪 Verificações
 
-\`\`\`powershell
-npm run typecheck
+Na pasta frontend:
+
+~~~powershell
 npm run lint
+npm run typecheck
 npm test
 npx playwright install chromium
 npm run e2e
 npm run build
-npm run start
-\`\`\`
+~~~
 
-Os comandos verificam tipos, lint, testes unitários, testes de navegador e build de produção.
+Na pasta backend:
 
-Na pasta \`backend\`:
-
-\`\`\`powershell
+~~~powershell
 .\mvnw.cmd test
-\`\`\`
+~~~
 
-Os testes unitários não precisam de Docker. Os testes de integração precisam de um MySQL 8.4 acessível ou de um Docker Engine para o Testcontainers.
+Os testes de integração do backend precisam de um MySQL 8.4 acessível ou de um Docker Engine para o Testcontainers.
 
-## Estrutura de pastas
-
-\`\`\`text
-plateon/
-├── backend/
-│   ├── src/main/java/       Código da API Spring Boot
-│   ├── src/main/resources/  Configurações e migrations Flyway
-│   ├── src/test/            Testes unitários e de integração
-│   ├── docs/                Documentação da API
-│   └── compose.yaml         Compose legado da API e do banco
-├── frontend/
-│   ├── app/                 Entrada do Next.js
-│   ├── src/api/             Cliente HTTP, tipos e hooks
-│   ├── src/app/             Rotas, sessão e permissões
-│   ├── src/design/          Tokens, estilos e componentes
-│   ├── src/features/        Funcionalidades do produto
-│   ├── src/lib/             Utilitários e SSE
-│   ├── src/test/            Mocks e configuração de testes
-│   ├── e2e/                 Testes completos no navegador
-│   └── docs/                Documentação do frontend
-├── compose.yaml              Compose principal
-├── .env.example              Variáveis de ambiente
-└── README.md                 Este documento
-\`\`\`
-
-## Acessos e funções
-
-- \`GARCOM\`: mesas, pedidos, chamados, comandas e recebimento;
-- \`COZINHA\`: acompanhamento e avanço dos pedidos;
-- \`GERENTE\`: administração completa e operações elevadas;
-- \`TABLET\`: acesso restrito ao tablet pareado.
-
-No perfil \`dev\`, a senha dos usuários de demonstração é \`dev12345678\`. Não use essas credenciais fora do ambiente local.
-
-## Documentação complementar
+## 📚 Documentação
 
 - [Documentação da API](backend/docs/docs.md)
 - [README do backend](backend/README.md)
@@ -185,6 +174,6 @@ No perfil \`dev\`, a senha dos usuários de demonstração é \`dev12345678\`. N
 - [Validação do frontend](frontend/docs/VALIDACAO.md)
 - [Divergências de implementação](frontend/docs/DIVERGENCIAS.md)
 
-## Licença
+## 📄 Licença
 
 Projeto desenvolvido para fins de estudo e demonstração.
