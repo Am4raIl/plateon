@@ -44,7 +44,7 @@ plateon/
 
 ## ✅ Pré-requisitos
 
-- **Docker:** Docker Engine com Docker Compose.
+- **Docker:** Docker Desktop (Windows) ou Docker Engine + Compose (Linux).
 - **Execução local:** Java 21, Node.js 20.9+, npm e MySQL 8.4.
 - **Portas:** 3000 para o frontend e 8081 para a API.
 
@@ -58,7 +58,9 @@ Na raiz do repositório, crie o arquivo de ambiente:
 Copy-Item .env.example .env
 ~~~
 
-Edite .env e defina JWT_SECRET com pelo menos 32 caracteres, ADMIN_USERNAME e ADMIN_PASSWORD.
+Os valores do `.env.example` já permitem executar o ambiente local. O usuário
+inicial é `admin` e a senha padrão é `admin12345678`. Troque essas credenciais
+antes de expor a aplicação ou usar dados reais.
 
 Para criar as imagens e iniciar todos os serviços:
 
@@ -100,9 +102,22 @@ docker compose down -v
 
 > Use down -v somente quando quiser recriar o banco e as imagens do zero.
 
-Para criar dados de demonstração, adicione SPRING_PROFILES_ACTIVE=dev ao .env. Esse perfil é destinado somente ao desenvolvimento.
+Para criar dados de demonstração, adicione `SPRING_PROFILES_ACTIVE=dev` ao `.env`.
+Esse perfil e as credenciais padrão são destinados somente ao desenvolvimento.
 
-### Desenvolvimento local
+### Windows — sem Docker
+
+~~~powershell
+mysql -u root -p
+~~~
+
+~~~sql
+CREATE DATABASE pedidos_mesa;
+CREATE USER 'plateon'@'localhost' IDENTIFIED BY 'plateon';
+GRANT ALL PRIVILEGES ON pedidos_mesa.* TO 'plateon'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+~~~
 
 Crie o banco pedidos_mesa no MySQL e configure as variáveis da API na pasta backend:
 
@@ -177,3 +192,32 @@ Os testes de integração do backend precisam de um MySQL 8.4 acessível ou de u
 ## 📄 Licença
 
 Projeto desenvolvido para fins de estudo e demonstração.
+## Linux — sem Docker
+
+~~~bash
+sudo mysql
+~~~
+
+~~~sql
+CREATE DATABASE pedidos_mesa;
+CREATE USER 'plateon'@'localhost' IDENTIFIED BY 'plateon';
+GRANT ALL PRIVILEGES ON pedidos_mesa.* TO 'plateon'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+~~~
+
+~~~bash
+cd backend
+./mvnw spring-boot:run
+~~~
+
+Em outro terminal:
+
+~~~bash
+cd frontend
+cp .env.example .env.local
+npm ci
+npm run dev
+~~~
+
+Acesse `http://localhost:3000`.
