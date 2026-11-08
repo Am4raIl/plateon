@@ -1,0 +1,55 @@
+name: plateon
+
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: pedidos_mesa
+      MYSQL_USER: plateon
+      MYSQL_PASSWORD: ${DB_PASSWORD:-plateon}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-localroot}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: ./backend
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/pedidos_mesa?connectionTimeZone=UTC
+      DB_USERNAME: plateon
+      DB_PASSWORD: ${DB_PASSWORD:-plateon}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET com pelo menos 32 caracteres no arquivo .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Defina ADMIN_USERNAME no arquivo .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Defina ADMIN_PASSWORD no arquivo .env}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      PRODUCT_IMAGES_DIR: /app/data/product-images
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - product_images:/app/data/product-images
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        PLATEON_API_ORIGIN: http://app:8081
+    environment:
+      PLATEON_API_ORIGIN: http://app:8081
+    ports:
+      - "3000:3000"
+    depends_on:
+      app:
+        condition: service_started
+
+volumes:
+  mysql_data:
+  product_images:
