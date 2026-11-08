@@ -4,6 +4,7 @@ import { useRead } from "../../api/hooks";
 import type { FechamentoDiario } from "../../api/types";
 import { Empty, ErrorState, Input, PageHead, Skeleton } from "../../design/ui";
 import { diaOperacional, labels, moeda, numero } from "../../lib/format";
+import styles from "./dashboard.module.css";
 function Breakdown({
   title,
   rows,
@@ -60,10 +61,18 @@ export function Dashboard() {
   const d = query.data;
   const max = Math.max(...d.vendasPorHora.map((r) => r.receita), 1);
   const nav = [
-    ["produtos", "Produtos"],
-    ["adicionais-mesas", "Adicionais e mesas"],
-    ["usuarios", "Usuários"],
-    ["dispositivos", "Dispositivos"],
+    { path: "produtos", label: "Produtos", description: "Cardápio e preços" },
+    {
+      path: "adicionais-mesas",
+      label: "Adicionais e mesas",
+      description: "Opções e organização da casa",
+    },
+    { path: "usuarios", label: "Usuários", description: "Acessos da equipe" },
+    {
+      path: "dispositivos",
+      label: "Dispositivos",
+      description: "Aparelhos conectados",
+    },
   ];
   return (
     <section className="page stack">
@@ -79,13 +88,20 @@ export function Dashboard() {
         />
       </PageHead>
       <p>O dia da casa começa às 04:00, no horário de São Paulo.</p>
-      <nav className="row" aria-label="Cadastros da gerência">
-        {nav.map(([path, label]) => (
-          <Link key={path} to={`/gerencia/${path}`}>
-            {label} →
-          </Link>
-        ))}
-      </nav>
+      <section className={styles.management} aria-labelledby="management-title">
+        <h2 id="management-title">Gerenciar a casa</h2>
+        <nav className={styles.links} aria-label="Cadastros da gerência">
+          {nav.map(({ path, label, description }) => (
+            <Link className={styles.link} key={path} to={`/gerencia/${path}`}>
+              <span className={styles.label}>{label}</span>
+              <span className={styles.description}>{description}</span>
+              <span className={styles.arrow} aria-hidden="true">
+                →
+              </span>
+            </Link>
+          ))}
+        </nav>
+      </section>
       <div className="stats">
         {[
           { label: "Total vendido", value: moeda(d.totalVendido) },
