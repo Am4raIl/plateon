@@ -1,0 +1,305 @@
+.staff {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+.side {
+  background: var(--verde);
+  color: var(--porcelana);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: hidden;
+}
+.side :global(.brand) {
+  color: var(--porcelana);
+}
+.side nav {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.side small {
+  color: #c4d2cb;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  padding: 20px 12px 8px;
+}
+.side a {
+  color: #e6ece7;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  min-height: 44px;
+}
+.side a[aria-current] {
+  background: var(--verde-2);
+  color: var(--porcelana);
+}
+.side footer {
+  flex-shrink: 0;
+  border-top: 1px solid #ffffff30;
+  padding-top: 20px;
+  display: grid;
+  gap: 8px;
+}
+.side footer button {
+  color: var(--porcelana);
+  justify-content: start;
+  padding-left: 0;
+}
+.side footer p {
+  color: #c4d2cb;
+  font-size: 14px;
+}
+.top {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  gap: 28px;
+  border-bottom: 1px solid var(--fio);
+  background: var(--porcelana);
+}
+.top nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-left: auto;
+}
+.top a {
+  text-decoration: none;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid transparent;
+}
+.top a[aria-current] {
+  border-color: var(--verde);
+}
+.tableName {
+  border-left: 1px solid var(--fio);
+  padding-left: 28px;
+  white-space: nowrap;
+}
+.staffHeader {
+  display: none;
+}
+.bottom {
+  display: none;
+}
+.mobileManagement {
+  display: none;
+}
+.login {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.loginAside {
+  background: var(--verde);
+  color: var(--porcelana);
+  padding: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.loginAside :global(.brand) {
+  color: var(--porcelana);
+}
+.loginAside h2 {
+  font-size: 44px;
+  max-width: 400px;
+}
+.loginAside p {
+  color: #c4d2cb;
+  margin-top: 24px;
+  max-width: 340px;
+}
+.loginAside :global(.section-label) {
+  color: #e4d2b1;
+}
+.loginMain {
+  display: grid;
+  place-items: center;
+  padding: 40px;
+}
+.loginForm {
+  max-width: 360px;
+  width: 100%;
+  display: grid;
+  gap: 32px;
+}
+.loginForm h1 {
+  font-size: 38px;
+}
+.home {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  padding: 32px;
+  gap: 36px;
+  max-width: 700px;
+  margin: auto;
+}
+.home h1 {
+  font-size: 44px;
+}
+.home a {
+  display: block;
+  background: var(--porcelana);
+  padding: 24px;
+  border: 1px solid var(--fio);
+  border-radius: 10px;
+  text-decoration: none;
+}
+.home a span {
+  display: block;
+  color: var(--mudo);
+  margin-top: 4px;
+}
+@media (max-width: 900px) {
+  .staff {
+    grid-template-columns: 190px minmax(0, 1fr);
+  }
+  .side {
+    padding: 24px 12px;
+  }
+  .top {
+    padding: 0 20px;
+    gap: 16px;
+  }
+  .top nav {
+    gap: 16px;
+  }
+  .tableName {
+    padding-left: 16px;
+  }
+}
+@media (max-width: 700px) {
+  .staff {
+    display: block;
+    padding-bottom: 76px;
+  }
+  .side {
+    display: none;
+  }
+  .staffHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: var(--verde);
+    color: var(--porcelana);
+    padding: 14px 16px;
+  }
+  .staffHeader :global(.brand) {
+    color: var(--porcelana);
+    font-size: 22px;
+  }
+  .staffHeader p {
+    color: #c4d2cb;
+    font-size: 13px;
+  }
+  .staffHeader button {
+    color: var(--porcelana);
+  }
+  .mobileManagement {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 8px 16px;
+    background: var(--verde-2);
+  }
+  .mobileManagement a {
+    flex: none;
+    color: var(--porcelana);
+    text-decoration: none;
+    border-radius: 6px;
+    padding: 9px 12px;
+    min-height: 44px;
+  }
+  .mobileManagement a[aria-current] {
+    background: var(--verde);
+  }
+  .bottom {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-height: 64px;
+    background: var(--porcelana);
+    border-top: 1px solid var(--fio);
+    z-index: 20;
+    overflow: auto;
+  }
+  .bottom a {
+    flex: 1;
+    display: grid;
+    place-content: center;
+    padding: 8px 12px;
+    text-decoration: none;
+    font-size: 13px;
+    min-height: 64px;
+    border-top: 3px solid transparent;
+  }
+  .bottom a[aria-current] {
+    border-color: var(--verde);
+    background: var(--verde-t);
+  }
+  .login {
+    grid-template-columns: 1fr;
+  }
+  .loginAside {
+    padding: 28px;
+    gap: 40px;
+  }
+  .loginAside h2 {
+    font-size: 30px;
+  }
+  .loginAside p {
+    display: none;
+  }
+  .loginMain {
+    padding: 32px 24px;
+  }
+  .top {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 12px 16px;
+    gap: 12px;
+  }
+  .top nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    margin: 0;
+    gap: 8px;
+  }
+  .top > button {
+    margin-left: auto;
+  }
+  .tableName {
+    font-size: 14px;
+  }
+  .top :global(.brand) {
+    font-size: 24px;
+  }
+  .top a {
+    font-size: 14px;
+  }
+  .home h1 {
+    font-size: 36px;
+  }
+}

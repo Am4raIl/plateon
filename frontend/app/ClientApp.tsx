@@ -1,0 +1,11 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+const App = dynamic(() => import("../src/app/App").then((module) => module.App), {
+  ssr: false,
+});
+
+export default function ClientApp() {
+  return <App />;
+}

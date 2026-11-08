@@ -1,19 +1,16 @@
 import type { NextConfig } from "next";
 
+const apiOrigin = process.env.PLATEON_API_ORIGIN || "http://localhost:8081";
+
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
+  devIndicators: false,
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${apiOrigin}/api/v1/:path*`,
       },
-    },
+    ];
   },
 };
 
