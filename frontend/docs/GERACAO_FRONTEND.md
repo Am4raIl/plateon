@@ -1,4 +1,6 @@
-# PANTEON — Prompt de implementação do frontend (documento único e autossuficiente)
+# PANTEON — brief original de implementação do frontend
+
+> Registro histórico do design inicial, mantido como referência visual. Algumas rotas, papéis e fluxos abaixo foram substituídos durante a implementação. Para o comportamento atual, consulte o [README](../README.md), as [divergências](DIVERGENCIAS.md), o [contrato da API](../../backend/docs/docs.md) e o código.
 
 Você é um engenheiro frontend sênior responsável por implementar o **Panteon**, software de restaurante com tablets fixos nas mesas e interfaces para cozinha, bar, garçons, caixa e gerência. Entregue o frontend de produção completo, funcionando contra a API real, **idêntico ao design descrito neste documento**, com todas as telas, fluxos, estados, mensagens/toasts e animações funcionando.
 

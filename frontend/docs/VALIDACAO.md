@@ -1,6 +1,6 @@
-# Verificação da implementação
+# Verificação da implementação — registro histórico
 
-Executada em 07/11/2026, com Node 24.14.0, Next.js 16.4.5, React 19 e Chromium do Playwright. Os testes utilizam os contratos MSW e o servidor HTTP local de teste, sem alterar o backend ou banco reais.
+Esta é a fotografia da validação executada em 07/11/2026, com Node 24.14.0, Next.js 16.4.5, React 19 e Chromium do Playwright. Os números abaixo registram aquela execução; para o estado atual, rode os comandos do [README do frontend](../README.md). Os testes utilizam os contratos MSW e o servidor HTTP local de teste, sem alterar o backend ou banco reais.
 
 ## Resultados
 
@@ -40,7 +40,7 @@ Todas as rotas abaixo utilizam dados da API configurada. Fixtures são restritas
 | T6 | `/mesa/rascunho`: editar item completo, stepper, remover, observação geral, envio e expiração | E2E de envio e nova tentativa; integração de criação, adição e envio idempotente |
 | T7 | `/mesa/pedido-enviado/:id`: itens e trilha derivados da comanda e SSE | E2E de cozinha avançando até entregue e tablet refletindo a atualização |
 | T8–T9 | `/mesa/comanda`, `/mesa/aguardando-pagamento`: pedidos, totais do servidor, chamados e bloqueio financeiro | E2E de chamado e fechamento; integração do bloqueio de rascunhos |
-| T10 | `/mesa/encerramento`: agradecimento, descarte da conta anterior, retorno em oito segundos e token preservado | Fluxo implementado pela transição da mesa para LIVRE; integração confirma ausência de comanda ativa após pagamento |
+| T10 | `/mesa/encerramento`: agradecimento, descarte da conta anterior e retorno ao pareamento em oito segundos | A implementação atual limpa o token revogado após o pagamento; a validação histórica não substitui teste com backend real |
 | E1 | `/equipe/login`: validação, papel, expiração, limite de tentativas e retorno ao destino | E2E de login por papel, 401, 429 e acesso direto negado |
 | E2–E3 | `/equipe/pedidos`: três colunas, estação, versão, cancelamento/retrocesso, detalhes, atraso, SSE, FLIP, mouse/toque/teclado | E2E de produção, conflito, teclado, mouse, toque e axe; unidade de permissões, transições e movimento do pedido inteiro |
 | E4 | `/equipe/chamados`: polling, tempo decorrido, abas, paginação, atendimento otimista e restauração em falha | E2E de chamado/atendimento e viewport móvel; mesma política de erros e espera de alterações |
@@ -67,6 +67,6 @@ Todas as rotas abaixo utilizam dados da API configurada. Fixtures são restritas
 
 ## Limites da homologação
 
-O backend em `localhost:8081` e seu OpenAPI não estavam disponíveis. O host tem Java 17, enquanto o backend exige Java 21, e não disponibiliza Docker/Podman no PATH. A implementação foi confrontada com a documentação e o código Java local, mas a homologação com banco, CORS e credenciais reais precisa ser realizada quando esse servidor estiver ativo.
+Na execução de 07/11/2026, o backend em `localhost:8081` e seu OpenAPI não estavam disponíveis no ambiente de teste. A implementação foi confrontada com a documentação e o código Java local, mas a homologação com banco e credenciais reais não foi coberta por essa execução.
 
 Não foram executadas leitura com um leitor de tela dedicado nem comparação pixel a pixel com artboards externos, que não foram fornecidos. A auditoria automática e a revisão de capturas não substituem essas etapas. As restrições de informação da API (mesas do garçom, estado financeiro da cozinha e minutos excedentes de atraso) estão em [DIVERGENCIAS.md](DIVERGENCIAS.md).

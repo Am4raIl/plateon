@@ -16,7 +16,7 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        if (res.status === 200 && res.body?.length) bru.setVar('usuario_id', res.body[0].id);
+        if (res.status === 200 && res.body?.itens?.length) bru.setVar('usuario_id', res.body.itens[0].id);
 
 settings:
   encodeUrl: true

@@ -1,6 +1,6 @@
 # Panteon · frontend
 
-Aplicação para tablet fixo, cozinha/bar, garçom e gerência. Fontes: [GERACAO_FRONTEND.md](docs/GERACAO_FRONTEND.md) e [guia da API](../backend/docs/docs.md). A interface usa a marca **Panteon**; diretório e backend continuam Plateon.
+Aplicação para tablet fixo, cozinha/bar, garçom e gerência. O [guia da API](../backend/docs/docs.md) descreve o contrato atual; o [brief original](docs/GERACAO_FRONTEND.md) registra as decisões visuais iniciais. A interface usa a marca **Panteon**; diretório e backend continuam Plateon.
 
 ## Executar
 
@@ -42,7 +42,7 @@ Para parear, abra `/mesa/pareamento` no tablet sem token. O garçom ou gerente a
 - SSE com `fetch` e Bearer, parser incremental, reconexão progressiva e nova leitura HTTP. Eventos aguardam o fim do arraste. Sem conexão, o Kanban mantém os dados e bloqueia alterações.
 - O Kanban também relê o quadro a cada 15 segundos para atualizar minutos e atrasos mesmo quando não há novos eventos; essa leitura pausa durante arraste e alteração.
 - Chamados atualizam a cada 10 s, pausando com a aba oculta. Estado e conta do tablet também têm polling e acompanhamento dos pedidos ativos por SSE.
-- Quando a mesa volta a `LIVRE`, os dados da conta anterior são limpos; o pareamento é preservado. Encerramento retorna ao início em oito segundos.
+- Após o pagamento, o backend revoga o token do tablet. A tela de encerramento limpa os dados da conta anterior e retorna ao pareamento em oito segundos.
 
 ## Verificações e build
 

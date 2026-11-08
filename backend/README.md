@@ -1,12 +1,12 @@
 # Plateon — pedidos por tablet e KDS
 
-Backend alfa em Java 21, Spring Boot 4.1.2 e MySQL 8.4. O tablet fixo da mesa consulta o cardápio, envia pedidos e acompanha status; a equipe usa JWT para pareamento, Kanban, conta e administração. A interface gráfica está fora do escopo definido em `docs.md`.
+API em Java 21, Spring Boot 4.1.2 e MySQL 8.4. O tablet fixo da mesa consulta o cardápio, envia pedidos e acompanha status; a equipe usa JWT para pareamento, Kanban, conta e administração. O frontend está em [`../frontend`](../frontend/README.md), e o contrato detalhado da API está em [`docs/docs.md`](docs/docs.md).
 
 ## Subir com Docker Compose
 
 Para subir frontend, API e banco juntos em um comando, siga o [Compose da raiz](../README.md). Este Compose local ao backend continua disponível para rodar apenas API e banco.
 
-Requisitos: Docker com Compose, portas 3306 e 8081 livres. A porta 8080 deste computador já é usada pelo Catapult.
+Requisitos: Docker com Compose e portas 3306 e 8081 livres para este Compose. O Compose da raiz publica somente a API na interface local e não publica a porta do MySQL.
 
 ```bash
 export JWT_SECRET="$(openssl rand -base64 48)"
@@ -15,19 +15,17 @@ export ADMIN_PASSWORD='uma-senha-forte-com-8-ou-mais-caracteres'
 docker compose up --build -d
 ```
 
-O Compose inicia MySQL 8.4, aguarda o health check e inicia a aplicação. Flyway aplica `V1` a `V10` no primeiro boot. O seed de referência cria 12 mesas, 43 produtos listados em `docs.md`, 20 adicionais, imagens SVG genéricas para cada produto e o gerente informado pelas variáveis. Reinícios não duplicam os dados. As imagens ficam no volume `product_images`; no host, o diretório padrão é `./data/product-images` e pode ser alterado com `PRODUCT_IMAGES_DIR`.
-
-Neste computador há `podman-compose` em vez do comando `docker`. Para subir tudo com Podman, use `podman-compose -f compose.yaml up --build -d` após definir as mesmas três variáveis acima.
+O Compose inicia MySQL 8.4, aguarda o health check e inicia a aplicação. Flyway aplica as migrations disponíveis até `V13` no primeiro boot. O seed de referência cria mesas, cardápio, adicionais e o gerente informado pelas variáveis; reinícios não duplicam os dados. As imagens de produtos ficam no volume `product_images`; em execução no host, o diretório padrão é `./data/product-images` e pode ser alterado com `PRODUCT_IMAGES_DIR`.
 
 Confira `http://localhost:8081/actuator/health` e abra `http://localhost:8081/swagger-ui.html`. Os documentos OpenAPI ficam em `/v3/api-docs`.
 
-O frontend Next.js abre em `http://127.0.0.1:3000` e encaminha `/api/v1` para esta API. Nesse acesso pelo frontend, não é necessário configurar `CORS_ORIGINS`.
+O frontend Next.js abre em `http://127.0.0.1:3000` quando iniciado separadamente e encaminha `/api/v1` para esta API. Nesse acesso pelo frontend, não é necessário configurar `CORS_ORIGINS`.
 
 Para os dados de demonstração, defina `SPRING_PROFILES_ACTIVE=dev` antes de `docker compose up --build -d`. O perfil cria usuários `dev_cozinha_1`/`2`, `dev_garcom_1`/`2` e `dev_gerente_1`/`2`, todos com senha `dev12345678`; tablets das mesas livres 1 a 10 usam tokens `dev-tablet-1` a `dev-tablet-10` (o 10 é revogado). Também cria pelo menos 54 pedidos, 45 comandas pagas, 12 chamados e solicitações de pareamento. O perfil é apenas para desenvolvimento. A migração V11 converte usuários antigos do papel CAIXA para GARCOM.
 
 ## Rodar a aplicação no host com Java 21
 
-O Java 21 já está disponível em `/usr/lib/jvm/java-21-openjdk` neste computador. Use `./mvn21` para selecioná-lo somente nos comandos do Plateon; a versão padrão do sistema continua intacta. Se o JDK 21 estiver em outro lugar, defina `PLATEON_JAVA_HOME` com seu caminho.
+Instale o JDK 21 e use o Maven Wrapper. Se o JDK 21 não for o padrão do host, configure `JAVA_HOME` antes de executar os comandos.
 
 ```bash
 export DB_URL='jdbc:mysql://localhost:3306/pedidos_mesa?connectionTimeZone=UTC'
@@ -36,11 +34,11 @@ export DB_PASSWORD=plateon
 export JWT_SECRET="$(openssl rand -base64 48)"
 export ADMIN_USERNAME=admin
 export ADMIN_PASSWORD='uma-senha-forte-com-8-ou-mais-caracteres'
-podman-compose -f compose.yaml up -d mysql
-./mvn21 spring-boot:run
+docker compose up -d mysql
+./mvnw spring-boot:run
 ```
 
-Para testar: `./mvn21 test`. O script usa o Maven instalado ou o wrapper do projeto. Os testes de integração usam Testcontainers e precisam de um Docker Engine acessível; os testes unitários rodam sem Docker. `FluxoIntegrationTest`, `MigrationIntegrationTest`, `SegurancaIntegrationTest` e `ConfiabilidadeIntegrationTest` aceitam, respectivamente, `PLATEON_TEST_JDBC`, `PLATEON_MIGRATION_TEST_JDBC`, `PLATEON_SECURITY_TEST_JDBC` e `PLATEON_RELIABILITY_TEST_JDBC`, cada uma apontando para um **banco MySQL 8.4 vazio e dedicado**, permitindo rodá-los sem Testcontainers. Os testes acrescentam `connectionTimeZone=UTC` à URL JDBC quando ela ainda não define esse parâmetro; mantenha UTC também nas URLs da aplicação para gravar corretamente as colunas `DATETIME`. O MySQL precisa das tabelas de fuso horário para os relatórios com `America/Sao_Paulo`.
+Para testar: `./mvnw test` (no Windows, `.\mvnw.cmd test`). Os testes de integração usam Testcontainers e precisam de um Docker Engine acessível; os testes unitários rodam sem Docker. `FluxoIntegrationTest`, `MigrationIntegrationTest`, `SegurancaIntegrationTest` e `ConfiabilidadeIntegrationTest` aceitam, respectivamente, `PLATEON_TEST_JDBC`, `PLATEON_MIGRATION_TEST_JDBC`, `PLATEON_SECURITY_TEST_JDBC` e `PLATEON_RELIABILITY_TEST_JDBC`, cada uma apontando para um **banco MySQL 8.4 vazio e dedicado**, permitindo rodá-los sem Testcontainers. Os testes acrescentam `connectionTimeZone=UTC` à URL JDBC quando ela ainda não define esse parâmetro; mantenha UTC também nas URLs da aplicação para gravar corretamente as colunas `DATETIME`. O MySQL precisa das tabelas de fuso horário para os relatórios com `America/Sao_Paulo`.
 
 A suíte verifica também fechamento forçado, bloqueio financeiro, envio concorrente com fechamento, rollback de pagamentos, preservação de categorias, médias com retrocessos, consultas em lote, limites de pareamento e SSE com revogação de acesso. Em instalações existentes, a V10 preenche os snapshots financeiros e de categoria com os dados disponíveis; alterações históricas anteriores não podem ser reconstruídas.
 
@@ -113,11 +111,11 @@ curl -sS -X POST "$BASE/admin/comandas/$COMANDA_ID/fechar" \
 curl -sS "$BASE/mesa/estado" -H "Authorization: Bearer $TABLET"
 ```
 
-O estado final da mesa deve ser `LIVRE`. Para acompanhar eventos SSE, faça `GET /mesa/pedidos/{id}/eventos` ou `GET /admin/kanban/eventos` com o Bearer no header usando um cliente que leia `text/event-stream` em streaming.
+Depois do pagamento, o token do tablet é revogado: a última chamada `/mesa/estado` com esse token deve retornar `401`. Pareie novamente para consultar o estado `LIVRE` da mesa. Para acompanhar eventos SSE antes do fechamento, faça `GET /mesa/pedidos/{id}/eventos` ou `GET /admin/kanban/eventos` com o Bearer no header usando um cliente que leia `text/event-stream` em streaming.
 
 ## Configuração e migrations
 
-As propriedades `restaurante.*` ficam em `src/main/resources/application.properties`; variáveis `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `CORS_ORIGINS` e `SPRING_PROFILES_ACTIVE` podem ser definidas no ambiente. `JWT_SECRET` precisa ter pelo menos 32 bytes. Para mudar esquema, crie `src/main/resources/db/migration/V11__descricao.sql`; não edite migrations já aplicadas. Hibernate usa `ddl-auto=validate` e Flyway nunca executa `clean`.
+As propriedades `restaurante.*` ficam em `src/main/resources/application.properties`; variáveis `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `CORS_ORIGINS` e `SPRING_PROFILES_ACTIVE` podem ser definidas no ambiente. `JWT_SECRET` precisa ter pelo menos 32 bytes. Para mudar o esquema, crie uma migration com versão posterior à `V13`; não edite migrations já aplicadas. Hibernate usa `ddl-auto=validate` e Flyway não executa `clean`.
 
 Consulte `docs/DECISOES.md` para decisões de implementação.
 

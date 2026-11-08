@@ -100,7 +100,7 @@ Para parar os containers e apagar também os volumes persistentes:
 docker compose down -v
 ~~~
 
-> Use down -v somente quando quiser recriar o banco e as imagens do zero.
+> Use `down -v` somente quando quiser apagar os dados do banco e as imagens de produtos armazenadas nos volumes.
 
 Para criar dados de demonstração, adicione `SPRING_PROFILES_ACTIVE=dev` ao `.env`.
 Esse perfil e as credenciais padrão são destinados somente ao desenvolvimento.
@@ -146,7 +146,27 @@ npm ci
 npm run dev
 ~~~
 
-Acesse <http://localhost:3000>. Para testar em um tablet na mesma rede, use npm run dev -- --hostname 0.0.0.0 e abra http://IP-DO-COMPUTADOR:3000.
+Acesse <http://localhost:3000>. Para testar em um tablet na mesma rede, use `npm run dev -- --hostname 0.0.0.0` e abra `http://IP-DO-COMPUTADOR:3000`.
+
+### Linux — sem Docker
+
+Crie o banco MySQL e um usuário local, como no exemplo da seção Windows. Defina `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_USERNAME` e `ADMIN_PASSWORD` no ambiente antes de iniciar a API:
+
+~~~bash
+cd backend
+./mvnw spring-boot:run
+~~~
+
+Em outro terminal:
+
+~~~bash
+cd frontend
+cp .env.example .env.local
+npm ci
+npm run dev
+~~~
+
+Acesse <http://localhost:3000>.
 
 ## 🔑 Credenciais de demonstração
 
@@ -188,36 +208,10 @@ Os testes de integração do backend precisam de um MySQL 8.4 acessível ou de u
 - [README do frontend](frontend/README.md)
 - [Validação do frontend](frontend/docs/VALIDACAO.md)
 - [Divergências de implementação](frontend/docs/DIVERGENCIAS.md)
+- [Coleção Bruno](backend/bruno/README.md)
+
+Arquivos `.env`, ambientes locais do Bruno, chaves e certificados são ignorados pelo Git. Versione apenas os arquivos `.example` sem valores privados. As credenciais padrão e de demonstração deste repositório são públicas e servem apenas para desenvolvimento local; substitua-as antes de expor os serviços.
 
 ## 📄 Licença
 
 Projeto desenvolvido para fins de estudo e demonstração.
-## Linux — sem Docker
-
-~~~bash
-sudo mysql
-~~~
-
-~~~sql
-CREATE DATABASE pedidos_mesa;
-CREATE USER 'plateon'@'localhost' IDENTIFIED BY 'plateon';
-GRANT ALL PRIVILEGES ON pedidos_mesa.* TO 'plateon'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-~~~
-
-~~~bash
-cd backend
-./mvnw spring-boot:run
-~~~
-
-Em outro terminal:
-
-~~~bash
-cd frontend
-cp .env.example .env.local
-npm ci
-npm run dev
-~~~
-
-Acesse `http://localhost:3000`.

@@ -35,3 +35,5 @@ build/
 
 # Credenciais locais do Bruno
 bruno/environments/Local.yml
+bruno/environments/Local.*.yml
+!bruno/environments/Local.example.yml

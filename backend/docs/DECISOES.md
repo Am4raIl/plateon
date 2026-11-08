@@ -13,6 +13,7 @@
 - ComandaRegras coordena mutações bloqueando comanda antes de pedido. Transações de escrita de pedidos/fechamento usam READ_COMMITTED para ler os dados atuais após esperar o bloqueio; leituras compostas usam transação de leitura.
 - AGUARDANDO_PAGAMENTO bloqueia edição/envio de rascunhos, cancelamentos e retrocessos. Pedidos já enviados podem avançar até ENTREGUE mesmo após fechamento forçado. PAGA preserva subtotal, taxa e total do fechamento; rascunhos não cobrados são cancelados com histórico no fechamento forçado. Uma requisição de envio repetida continua retornando o estado atual do mesmo pedido, sem reenviá-lo.
 - V10 preserva categoria no item e valores financeiros na comanda paga. Para dados legados, o backfill usa categoria e itens disponíveis no momento da migration: não é possível recuperar alterações históricas já perdidas. As migrations V1–V9 permanecem intactas.
+- V11 inclui a configuração global de couvert e migra usuários CAIXA para GARCOM. V12 registra reaberturas de comandas e pagamentos estornados. V13 guarda os valores anteriores de taxa e couvert para restaurá-los ao retomar uma comanda aguardando pagamento.
 - Indicadores usam a categoria preservada no item e os valores financeiros do fechamento. Cada pedido não cancelado contribui no máximo uma vez para cada média: última conclusão da etapa e início correspondente mais recente anterior a ela, ordenados pelo histórico.
 - Troco é calculado e não persistido. Taxa e pagamentos contam no dia operacional do fechamento.
 - Logs com MDC e Actuator health/info. Seeds usam chave natural e não usam factories.
@@ -21,5 +22,5 @@
 - No MySQL, `INSERT IGNORE` seguido de `SELECT FOR UPDATE` pode causar deadlock sob concorrência. O envio repete a transação inteira após rollback, preservando o número diário sem lacunas.
 - `vendasPorHora` do dashboard converte o `DATETIME(6)` UTC para o fuso do restaurante via `CONVERT_TZ`; o contêiner MySQL 8.4 usado no teste possui dados de fuso.
 - A URL JDBC usa `connectionTimeZone=UTC` para que o driver grave e leia `DATETIME(6)` em UTC, inclusive nos testes com banco externo.
-- O Plateon escuta na porta 8081 por padrão (`SERVER_PORT` pode sobrescrever), pois o Catapult já usa a porta 8080 neste computador.
+- O Plateon escuta na porta 8081 por padrão (`SERVER_PORT` pode sobrescrever).
 - `totalVendido` no dashboard soma itens de pedidos não cancelados; taxa de serviço e couvert aparecem no ticket da comanda e a taxa tem campo próprio. Esta definição evita contar a taxa duas vezes.

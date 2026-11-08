@@ -1,6 +1,6 @@
 # Plateon: guia de integração para o frontend
 
-Este documento descreve a API **implementada** no backend Plateon. Seu público é quem vai construir as interfaces do tablet fixo da mesa e da equipe do restaurante. A especificação original está em ../docs.md; se houver diferença entre ela e este guia, confira o código e o OpenAPI da versão em execução.
+Este documento descreve a API **implementada** no backend Plateon. Seu público é quem integra as interfaces do tablet fixo da mesa e da equipe do restaurante. Em caso de diferença, confira o código e o OpenAPI da versão em execução.
 
 ## 1. Produto e telas esperadas
 
@@ -14,7 +14,7 @@ Uma implementação de frontend pode ter estas áreas:
 | Equipe | Login, Kanban, chamados, comandas e pagamento | JWT do funcionário |
 | Gerência | Produtos, adicionais, mesas, usuários, dispositivos e dashboard | JWT de gerente |
 
-O backend não serve interface gráfica. O frontend pode ser uma aplicação separada. Configure CORS_ORIGINS com a origem exata do frontend, por exemplo http://localhost:3000, antes de iniciar o backend.
+O backend não serve interface gráfica. O frontend do repositório encaminha `/api/v1` pelo Next.js, sem exigir CORS entre navegador e API. Se outro frontend chamar a API diretamente de uma origem diferente, configure `CORS_ORIGINS` com essa origem exata.
 
 ## 2. Convenções da API
 
@@ -200,7 +200,7 @@ ComandaView, devolvida em /mesa/comanda e /admin/comandas:
 }
 ~~~
 
-O exemplo acima abrevia itens do pedido; em uma resposta real, eles seguem o formato completo de PedidoView. O subtotal da comanda soma somente pedidos enviados e não cancelados. Total = subtotal + taxaServico + couvert. A taxa percentual e o couvert são fixados na abertura; o garçom pode remover a taxa durante o fechamento. O gerente define o couvert global em GET/PUT `/admin/configuracao/couvert` com corpo `{"valor":12.00}`. A mudança vale somente para novas comandas.
+O exemplo acima abrevia itens do pedido; em uma resposta real, eles seguem o formato completo de PedidoView. O subtotal da comanda soma somente pedidos enviados e não cancelados. Total = subtotal + taxaServico + couvert. A taxa percentual e o couvert são fixados na abertura; garçom e gerente podem removê-los durante o fechamento. O gerente define o couvert global em GET/PUT `/admin/configuracao/couvert` com corpo `{"valor":12.00}`. A mudança vale somente para novas comandas.
 
 ### Demais formatos
 
@@ -256,6 +256,7 @@ Nas tabelas, “sem corpo” significa que a requisição não envia JSON; “va
 | POST /auth/login | LoginInput | LoginView |
 | POST /dispositivos/pareamento | Sem corpo | SolicitacaoPareamento |
 | GET /dispositivos/pareamento/{solicitacaoId} | Sem corpo | EstadoPareamento; pode retornar 410 |
+| GET /imagens/produtos/{id}.svg | Sem corpo | Imagem SVG de produto de referência |
 
 ### 4.2 Tablet: Bearer do dispositivo
 
@@ -271,6 +272,7 @@ Nas tabelas, “sem corpo” significa que a requisição não envia JSON; “va
 | POST /mesa/pedidos/{id}/enviar | EnvioInput opcional; pode ser sem corpo | PedidoView RECEBIDO ou estado já alcançado |
 | POST /mesa/pedidos/{id}/cancelar | Sem corpo | PedidoView CANCELADO |
 | POST /mesa/chamados | ChamadoInput | ChamadoView |
+| POST /mesa/desparear | Sem corpo | 200 vazio; revoga o próprio token do tablet |
 | GET /mesa/pedidos/{id}/eventos | Sem corpo | Fluxo text/event-stream; pedido precisa pertencer ao tablet |
 
 O campo id das rotas de pedido é o UUID do **pedido**, não numeroDiario. Nenhuma rota do tablet recebe mesaId, inclusive na URL. Para obter a lista de pedidos da mesa, consulte /mesa/comanda; não existe GET /mesa/pedidos/{id} nesta versão.
@@ -291,6 +293,8 @@ O campo id das rotas de pedido é o UUID do **pedido**, não numeroDiario. Nenhu
 | POST /admin/comandas | AbrirComandaInput | ComandaView; também cria rascunho |
 | GET /admin/comandas/{id} | Sem corpo | ComandaView, inclusive paga |
 | POST /admin/comandas/{id}/fechar | FechamentoInput | FechamentoView |
+| POST /admin/comandas/{id}/retomar | Sem corpo | ComandaView; retoma comanda aguardando pagamento |
+| POST /admin/comandas/{id}/reabrir | `{"motivo":"..."}` | ComandaView; reabre comanda paga |
 | GET /admin/chamados?pagina=0&tamanho=20&status=ABERTO | Sem corpo; parâmetros opcionais | Página de ChamadoAdminView; sem status, inclui todos |
 | PATCH /admin/chamados/{id} | AtendimentoInput | ChamadoAdminView atualizado |
 | GET /admin/dashboard/fechamento-diario?dia=YYYY-MM-DD | Sem corpo; dia opcional | FechamentoDiario |
@@ -321,6 +325,8 @@ O campo id das rotas de pedido é o UUID do **pedido**, não numeroDiario. Nenhu
 | POST /admin/usuarios | UsuarioInput com senha | UsuarioView |
 | PATCH /admin/usuarios/{id} | UsuarioInput; senha opcional | UsuarioView atualizado |
 | DELETE /admin/usuarios/{id} | Sem corpo | 200 vazio; desativa usuário |
+| GET /admin/configuracao/couvert | Sem corpo | `{"valor":12.00}` |
+| PUT /admin/configuracao/couvert | `{"valor":12.00}` | Valor atualizado; afeta novas comandas |
 
 Os PATCH de produto, adicional, mesa e usuário **não são alterações parciais de campos**: envie os dados atuais completos com os campos alterados. Valores booleanos omitidos podem virar false. PATCH de dispositivo, por sua vez, aceita nome e/ou mesaId opcionais.
 
@@ -455,13 +461,14 @@ FechamentoInput para POST /admin/comandas/{id}/fechar:
     {"forma":"DINHEIRO","valor":22.00,"valorRecebido":30.00}
   ],
   "removerTaxa": false,
+  "removerCouvert": false,
   "forcar": false
 }
 ~~~
 
 Formas possíveis: DINHEIRO, PIX, CARTAO_CREDITO e CARTAO_DEBITO. A soma dos valores **aplicados** deve ser exatamente total da comanda. valorRecebido só pode ser informado para DINHEIRO e deve ser maior ou igual a valor. O troco é a soma de (valorRecebido - valor) de pagamentos em dinheiro; não é armazenado. Sem gateway de pagamento: essa rota **registra** um pagamento confirmado pela equipe.
 
-Todos os pedidos da comanda precisam estar ENTREGUE ou CANCELADO. Só GERENTE pode usar forcar=true para ignorar pendências. Com removerTaxa=true, a taxa percentual é zerada antes de calcular o total. Para mostrar a conta antes de cobrar, pode-se chamar a rota com pagamentos=[]; isso muda o status para AGUARDANDO_PAGAMENTO e devolve o total atualizado. Em seguida, faça GET /mesa/comanda ou GET /admin/comandas/{id} e envie outra chamada com os pagamentos exatos. Enquanto aguarda pagamento, POST /mesa/pedidos rejeita novo rascunho com 409.
+Todos os pedidos da comanda precisam estar ENTREGUE ou CANCELADO. Só GERENTE pode usar forcar=true para ignorar pendências. `removerTaxa=true` zera a taxa percentual e `removerCouvert=true` zera o couvert antes de calcular o total. Para mostrar a conta antes de cobrar, pode-se chamar a rota com pagamentos=[]; isso muda o status para AGUARDANDO_PAGAMENTO e devolve o total atualizado. Em seguida, faça GET /mesa/comanda ou GET /admin/comandas/{id} e envie outra chamada com os pagamentos exatos. `POST /admin/comandas/{id}/retomar` volta a comanda para ABERTA e restaura taxa/couvert removidos durante a preparação. `POST /admin/comandas/{id}/reabrir` exige uma comanda PAGA, motivo de 3 a 500 caracteres e ausência de comanda mais recente na mesa; registra a reabertura e estorna os pagamentos registrados. Enquanto aguarda pagamento, POST /mesa/pedidos rejeita novo rascunho com 409.
 
 AGUARDANDO_PAGAMENTO também bloqueia edição, remoção e envio de itens de rascunhos existentes, cancelamentos e retrocessos no Kanban. Os pedidos enviados podem continuar avançando até ENTREGUE. No fechamento forçado com pagamento, rascunhos não cobrados passam a CANCELADO com histórico; repetir o envio desses IDs apenas devolve CANCELADO, sem gerar número diário. Pedidos cobrados podem ser preparados e entregues após o fechamento forçado, mas não cancelados nem retrocedidos. Subtotal, taxa e total da conta paga são preservados no fechamento. Falhas de validação de pagamentos revertem integralmente a operação.
 
@@ -485,7 +492,7 @@ FechamentoView:
 }
 ~~~
 
-O array pedidos acima foi abreviado para facilitar a leitura; a resposta real inclui os pedidos da comanda. Quando pagamentos=[], troco=0.00 e o status retornado é AGUARDANDO_PAGAMENTO. Depois que o status é PAGA, GET /mesa/estado devolve LIVRE e GET /mesa/comanda não tem mais uma comanda ativa. Limpe no frontend carrinho, IDs e dados da sessão anterior da mesa, preservando apenas o token do tablet.
+O array pedidos acima foi abreviado para facilitar a leitura; a resposta real inclui os pedidos da comanda. Quando pagamentos=[], troco=0.00 e o status retornado é AGUARDANDO_PAGAMENTO. Depois que o status é PAGA, o token do tablet da mesa é revogado na mesma transação. Chamadas `/mesa/**` com esse token recebem 401; limpe token, carrinho, IDs e dados da conta anterior e inicie novo pareamento. Um tablet recém-pareado sem comanda ativa recebe `LIVRE` em GET /mesa/estado.
 
 ### 5.5 Administração do cardápio, mesas e usuários
 
