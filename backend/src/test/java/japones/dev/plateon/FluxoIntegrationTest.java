@@ -93,14 +93,29 @@ class FluxoIntegrationTest {
             var current=pedidos.pedido(draft.id(),mesa);
             SecurityContextHolder.getContext().setAuthentication(auth);
             try {
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario,null,List.of(new SimpleGrantedAuthority("ROLE_GARCOM"))));
+                current=kanban.transicao(draft.id(),new KanbanService.Transicao("RECEBIDO","Movido por engano",current.versao()));
+                current=kanban.transicao(draft.id(),new KanbanService.Transicao("EM_PREPARO",null,current.versao()));
+                SecurityContextHolder.getContext().setAuthentication(auth);
                 current=kanban.transicao(draft.id(),new KanbanService.Transicao("PRONTO",null,current.versao()));
                 current=kanban.transicao(draft.id(),new KanbanService.Transicao("ENTREGUE",null,current.versao()));
                 var comanda=pedidos.comandaAtual(mesa);
                 assertEquals(new BigDecimal("17.60"),comanda.total());
+                var chamadoConta=pedidos.chamar(mesa,new PedidoService.ChamadoInput("CONTA"));
+                SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario,null,List.of(new SimpleGrantedAuthority("ROLE_GARCOM"))));
+                var aguardando=contas.fechar(comanda.id(),new ContaService.Fechamento(List.of(),true,false,false));
+                assertEquals("AGUARDANDO_PAGAMENTO",aguardando.comanda().status());
+                assertEquals(new BigDecimal("16.00"),aguardando.comanda().total());
+                var retomada=contas.retomar(comanda.id());
+                assertEquals("ABERTA",retomada.status());
+                assertEquals(new BigDecimal("17.60"),retomada.total());
+                assertEquals("EM_ATENDIMENTO",pedidos.estado(mesa,1).estado());
                 var fechamento=contas.fechar(comanda.id(),new ContaService.Fechamento(
                     List.of(new ContaService.PagamentoInput("PIX",comanda.total(),null)),false,false));
                 assertEquals("PAGA",fechamento.comanda().status());
+                assertEquals("ATENDIDO",db.str(db.one("SELECT status FROM chamado_garcom WHERE id=?",chamadoConta.id()),"status"));
                 assertEquals("LIVRE",pedidos.estado(mesa,1).estado());
+                assertEquals(0,((Number)db.one("SELECT COUNT(*) AS total FROM dispositivo WHERE id=? AND ativo=1",aprovado.id()).get("total")).intValue());
             } finally { SecurityContextHolder.clearContext(); }
             var outros=new ArrayList<String>();
             for(int n=0;n<50;n++) {
@@ -169,7 +184,7 @@ class FluxoIntegrationTest {
                 assertEquals(produto,itens.getFirst().getProduto().getId().toString());
                 var historico=em.createQuery("select h from PedidoStatusHistorico h where h.pedido.id=:id",PedidoStatusHistorico.class)
                     .setParameter("id",UUID.fromString(draft.id())).getResultList();
-                assertEquals(4,historico.size());
+                assertEquals(6,historico.size());
                 assertTrue(historico.stream().anyMatch(h -> h.getPara()==PedidoStatus.PRONTO && h.getUsuario()!=null));
                 var pagamentos=em.createQuery("select p from Pagamento p where p.comanda.id=:id",Pagamento.class)
                     .setParameter("id",jpaPedido.getComanda().getId()).getResultList();
@@ -184,13 +199,24 @@ class FluxoIntegrationTest {
                 var dispositivo=em.find(Dispositivo.class,UUID.fromString(aprovado.id()));
                 assertEquals(64,dispositivo.getTokenHash().length());
                 assertEquals(1,dispositivo.getMesa().getNumero());
-                assertTrue(dispositivo.getAtivo());
+                assertFalse(dispositivo.getAtivo());
                 assertEquals(PareamentoStatus.CONSUMIDA,em.find(SolicitacaoPareamento.class,UUID.fromString(solicitacao.solicitacaoId())).getStatus());
                 assertEquals(ChamadoTipo.AJUDA,em.find(ChamadoGarcom.class,UUID.fromString(chamado.id())).getTipo());
                 assertEquals("GERENTE",em.find(Usuario.class,UUID.fromString(usuario)).getPapel().name());
                 assertEquals(new BigDecimal("19.00"),em.find(Produto.class,UUID.fromString(produto)).getPreco());
                 assertTrue(em.find(Adicional.class,UUID.fromString(cheddar)).getCategorias().contains(Categoria.HAMBURGUERES));
             }
+            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(usuario,null,List.of(new SimpleGrantedAuthority("ROLE_GARCOM"))));
+            try {
+                var contaPaga=db.str(db.one("SELECT id FROM comanda WHERE mesa_id=? AND status='PAGA'",mesa),"id");
+                var reaberta=contas.reabrir(contaPaga,new ContaService.Reabertura("Pagamento registrado por engano"));
+                assertEquals("ABERTA",reaberta.status());
+                assertEquals(0,db.jdbc().queryForObject("SELECT COUNT(*) FROM pagamento WHERE comanda_id=?",Integer.class,contaPaga));
+                assertEquals(1,db.jdbc().queryForObject("SELECT COUNT(*) FROM pagamento_estornado WHERE reabertura_id=(SELECT id FROM comanda_reabertura WHERE comanda_id=?)",Integer.class,contaPaga));
+                assertEquals(HttpStatus.CONFLICT,assertThrows(ApiException.class,() -> contas.reabrir(contaPaga,new ContaService.Reabertura("Duplicada"))).status());
+                assertEquals("PAGA",contas.fechar(contaPaga,new ContaService.Fechamento(
+                    List.of(new ContaService.PagamentoInput("PIX",reaberta.total(),null)),false,false)).comanda().status());
+            } finally { SecurityContextHolder.clearContext(); }
         } finally { if(mysql!=null) mysql.stop(); }
     }
 }

@@ -109,11 +109,14 @@ class SegurancaIntegrationTest {
                     "--restaurante.jwt.segredo=integration_test_secret_32_characters_long",
                     "--spring.profiles.active=dev","--server.port=0")) {
             base="http://127.0.0.1:"+((ServletWebServerApplicationContext)context).getWebServer().getPort()+"/api/v1";
-            String gerente=login("dev_gerente_1"),cozinha=login("dev_cozinha_1"),garcom=login("dev_garcom_1"),caixa=login("dev_caixa_1");
+            String gerente=login("dev_gerente_1"),cozinha=login("dev_cozinha_1"),garcom=login("dev_garcom_1");
             assertEquals(200,request("GET","/admin/kanban",null,cozinha).status());
             assertEquals(403,request("GET","/admin/produtos",null,cozinha).status());
-            assertEquals(403,request("GET","/admin/kanban",null,caixa).status());
+            assertEquals(200,request("GET","/admin/kanban",null,garcom).status());
             assertEquals(200,request("GET","/admin/chamados",null,garcom).status());
+            assertEquals(200,request("GET","/admin/mesas",null,garcom).status());
+            assertEquals(200,request("GET","/admin/dispositivos",null,garcom).status());
+            assertEquals(403,request("GET","/admin/dispositivos",null,cozinha).status());
             var resumos=object(request("GET","/admin/comandas/resumos",null,garcom).body());
             var resumo=(Map<String,Object>)((List<?>)resumos.get("itens")).getFirst();
             assertFalse(resumo.containsKey("pedidos"));
@@ -133,14 +136,27 @@ class SegurancaIntegrationTest {
             assertEquals(2,((List<?>)fechamento.get("vendasPorFormaPagamento")).size());
             var novaMesa=object(request("POST","/admin/mesas","{\"numero\":5000,\"capacidade\":4,\"ativa\":true}",gerente).body());
             String novaMesaId=(String)novaMesa.get("id");
+            assertEquals(403,request("PUT","/admin/configuracao/couvert","{\"valor\":7.50}",garcom).status());
+            assertEquals(200,request("PUT","/admin/configuracao/couvert","{\"valor\":7.50}",gerente).status());
+            var comCouvert=object(request("POST","/admin/comandas","{\"mesaId\":\""+novaMesaId+"\"}",garcom).body());
+            assertEquals(0,new BigDecimal(comCouvert.get("couvert").toString()).compareTo(new BigDecimal("7.50")));
+            assertEquals(200,request("PUT","/admin/configuracao/couvert","{\"valor\":9.00}",gerente).status());
+            assertEquals(0,new BigDecimal(object(request("GET","/admin/comandas/"+comCouvert.get("id"),null,garcom).body()).get("couvert").toString()).compareTo(new BigDecimal("7.50")));
+            String comCouvertId=(String)comCouvert.get("id");
+            assertEquals(200,request("POST","/admin/comandas/"+comCouvertId+"/fechar","{\"pagamentos\":[],\"removerTaxa\":false,\"removerCouvert\":true,\"forcar\":true}",gerente).status());
+            assertEquals(0,new BigDecimal(object(request("GET","/admin/comandas/"+comCouvertId,null,garcom).body()).get("couvert").toString()).compareTo(BigDecimal.ZERO));
+            var retomada=object(request("POST","/admin/comandas/"+comCouvertId+"/retomar",null,garcom).body());
+            assertEquals("ABERTA",retomada.get("status"));
+            assertEquals(0,new BigDecimal(retomada.get("couvert").toString()).compareTo(new BigDecimal("7.50")));
+            assertEquals(409,request("POST","/admin/comandas/"+comCouvertId+"/retomar",null,garcom).status());
             assertEquals(409,request("POST","/admin/mesas","{\"numero\":5000,\"capacidade\":4,\"ativa\":true}",gerente).status());
             assertEquals(200,request("PATCH","/admin/mesas/"+novaMesaId,"{\"numero\":5000,\"capacidade\":6,\"ativa\":true}",gerente).status());
             assertEquals(6,((Number)object(request("GET","/admin/mesas/"+novaMesaId,null,gerente).body()).get("capacidade")).intValue());
             assertEquals(200,request("DELETE","/admin/mesas/"+novaMesaId,null,gerente).status());
             var usuario=object(request("POST","/admin/usuarios","{\"nome\":\"Teste\",\"username\":\"teste_admin\",\"senha\":\"senha12345\",\"papel\":\"GARCOM\",\"ativo\":true}",gerente).body());
             String usuarioId=(String)usuario.get("id");
-            assertEquals(200,request("PATCH","/admin/usuarios/"+usuarioId,"{\"nome\":\"Teste 2\",\"username\":\"teste_admin\",\"papel\":\"CAIXA\",\"ativo\":true}",gerente).status());
-            assertEquals("CAIXA",object(request("GET","/admin/usuarios/"+usuarioId,null,gerente).body()).get("papel"));
+            assertEquals(200,request("PATCH","/admin/usuarios/"+usuarioId,"{\"nome\":\"Teste 2\",\"username\":\"teste_admin\",\"papel\":\"GARCOM\",\"ativo\":true}",gerente).status());
+            assertEquals("GARCOM",object(request("GET","/admin/usuarios/"+usuarioId,null,gerente).body()).get("papel"));
             assertEquals(200,request("DELETE","/admin/usuarios/"+usuarioId,null,gerente).status());
             assertEquals(422,request("POST","/admin/adicionais","{\"nome\":\"Invalido\",\"preco\":1,\"ativo\":true,\"categorias\":[\"BEBIDAS\"]}",gerente).status());
             var extra=object(request("POST","/admin/adicionais","{\"nome\":\"Teste extra\",\"preco\":2.50,\"ativo\":true,\"categorias\":[\"HAMBURGUERES\"]}",gerente).body());
@@ -174,7 +190,9 @@ class SegurancaIntegrationTest {
             var d1=devices.stream().filter(d -> d.get("nome").equals("Demo tablet 1")).findFirst().orElseThrow();
             var d2=devices.stream().filter(d -> d.get("nome").equals("Demo tablet 2")).findFirst().orElseThrow();
             assertEquals(409,request("PATCH","/admin/dispositivos/"+d1.get("id"),"{\"mesaId\":\""+d2.get("mesaId")+"\"}",gerente).status());
-            assertEquals(200,request("DELETE","/admin/dispositivos/"+d2.get("id"),null,gerente).status());
+            assertEquals(403,request("PATCH","/admin/dispositivos/"+d2.get("id"),"{\"nome\":\"Outro\"}",garcom).status());
+            assertEquals(403,request("DELETE","/admin/dispositivos/"+d2.get("id"),null,cozinha).status());
+            assertEquals(200,request("DELETE","/admin/dispositivos/"+d2.get("id"),null,garcom).status());
             assertEquals(200,request("PATCH","/admin/dispositivos/"+d1.get("id"),"{\"mesaId\":\""+d2.get("mesaId")+"\"}",gerente).status());
             var estado=object(request("GET","/mesa/estado",null,"dev-tablet-1").body());
             assertEquals(2,((Number)estado.get("numeroMesa")).intValue());

@@ -4,6 +4,8 @@ Backend alfa em Java 21, Spring Boot 4.1.2 e MySQL 8.4. O tablet fixo da mesa co
 
 ## Subir com Docker Compose
 
+Para subir frontend, API e banco juntos em um comando, siga o [Compose da raiz](../README.md). Este Compose local ao backend continua disponível para rodar apenas API e banco.
+
 Requisitos: Docker com Compose, portas 3306 e 8081 livres. A porta 8080 deste computador já é usada pelo Catapult.
 
 ```bash
@@ -19,7 +21,9 @@ Neste computador há `podman-compose` em vez do comando `docker`. Para subir tud
 
 Confira `http://localhost:8081/actuator/health` e abra `http://localhost:8081/swagger-ui.html`. Os documentos OpenAPI ficam em `/v3/api-docs`.
 
-Para os dados de demonstração, defina `SPRING_PROFILES_ACTIVE=dev` antes de `docker compose up --build -d`. O perfil cria usuários `dev_cozinha_1`/`2`, `dev_garcom_1`/`2`, `dev_caixa_1`/`2` e `dev_gerente_1`/`2`, todos com senha `dev12345678`; tablets das mesas livres 1 a 10 usam tokens `dev-tablet-1` a `dev-tablet-10` (o 10 é revogado). Também cria pelo menos 54 pedidos, 45 comandas pagas, 12 chamados e solicitações de pareamento. O perfil é apenas para desenvolvimento.
+O frontend Next.js abre em `http://127.0.0.1:3000` e encaminha `/api/v1` para esta API. Nesse acesso pelo frontend, não é necessário configurar `CORS_ORIGINS`.
+
+Para os dados de demonstração, defina `SPRING_PROFILES_ACTIVE=dev` antes de `docker compose up --build -d`. O perfil cria usuários `dev_cozinha_1`/`2`, `dev_garcom_1`/`2` e `dev_gerente_1`/`2`, todos com senha `dev12345678`; tablets das mesas livres 1 a 10 usam tokens `dev-tablet-1` a `dev-tablet-10` (o 10 é revogado). Também cria pelo menos 54 pedidos, 45 comandas pagas, 12 chamados e solicitações de pareamento. O perfil é apenas para desenvolvimento. A migração V11 converte usuários antigos do papel CAIXA para GARCOM.
 
 ## Rodar a aplicação no host com Java 21
 

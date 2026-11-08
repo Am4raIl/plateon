@@ -32,6 +32,8 @@
 @SET __MVNW_ERROR__=
 @SET __MVNW_PSMODULEP_SAVE=%PSModulePath%
 @SET PSModulePath=
+@IF EXIST "%USERPROFILE%\.jdks\openjdk-25.0.2\bin\java.exe" SET "JAVA_HOME=%USERPROFILE%\.jdks\openjdk-25.0.2"
+@IF EXIST "C:\maven\bin\mvn.cmd" (CALL "C:\maven\bin\mvn.cmd" %* & EXIT /B %ERRORLEVEL%)
 @FOR /F "usebackq tokens=1* delims==" %%A IN (`powershell -noprofile "& {$scriptDir='%~dp0'; $script='%__MVNW_ARG0_NAME__%'; icm -ScriptBlock ([Scriptblock]::Create((Get-Content -Raw '%~f0'))) -NoNewScope}"`) DO @(
   IF "%%A"=="MVN_CMD" (set __MVNW_CMD__=%%B) ELSE IF "%%B"=="" (echo %%A) ELSE (echo %%A=%%B)
 )

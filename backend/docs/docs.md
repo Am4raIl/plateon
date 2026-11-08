@@ -4,7 +4,7 @@ Este documento descreve a API **implementada** no backend Plateon. Seu público 
 
 ## 1. Produto e telas esperadas
 
-Plateon atende um restaurante de salão. Cada mesa tem um tablet próprio: o cliente vê o cardápio, monta e envia pedidos, acompanha o andamento, consulta a conta e chama um garçom. Não há QR code, celular do cliente, pagamento eletrônico real, impressão, estoque ou divisão de conta. Cozinha e bar acompanham pedidos em um Kanban. Garçom atende chamados e ajuda no pareamento. Caixa fecha comandas. Gerente administra cardápio, mesas, usuários, dispositivos e indicadores.
+Plateon atende um restaurante de salão. Cada mesa tem um tablet próprio: o cliente vê o cardápio, monta e envia pedidos, acompanha o andamento, consulta a conta e chama um garçom. Não há QR code, celular do cliente, pagamento eletrônico real, impressão, estoque ou divisão de conta. Cozinha e bar acompanham pedidos em um Kanban. O garçom atende chamados, pareia tablets e fecha comandas. O gerente administra cardápio, mesas, usuários, couvert, dispositivos e indicadores.
 
 Uma implementação de frontend pode ter estas áreas:
 
@@ -42,12 +42,14 @@ O JWT da equipe vem de POST /auth/login, dura 8 horas e só funciona em /admin/*
 | --- | --- |
 | Ver e mover Kanban | COZINHA, GARCOM, GERENTE |
 | Ver/atender chamados e aprovar pareamento | GARCOM, GERENTE |
-| Ver comandas | GARCOM, CAIXA, GERENTE |
+| Ver comandas | GARCOM, GERENTE |
 | Abrir comanda pelo painel | GARCOM, GERENTE |
-| Fechar comanda e registrar pagamento | CAIXA, GERENTE |
-| Produtos, adicionais, mesas, usuários, dispositivos e dashboard | GERENTE |
+| Fechar comanda e registrar pagamento | GARCOM, GERENTE |
+| Produtos, adicionais, mesas, usuários, couvert e dashboard | GERENTE |
+| Listar mesas e tablets, parear e desparear tablet | GARCOM, GERENTE |
+| Editar dados do tablet | GERENTE |
 
-A hierarquia configurada é GERENTE acima de CAIXA e GARCOM, e GARCOM acima de COZINHA. Use o campo papel do login para mostrar menus adequados, mas trate 403 da API como autoridade final.
+A hierarquia configurada é GERENTE acima de GARCOM, e GARCOM acima de COZINHA. Use o campo papel do login para mostrar menus adequados, mas trate 403 da API como autoridade final.
 
 ### Erros
 
@@ -198,7 +200,7 @@ ComandaView, devolvida em /mesa/comanda e /admin/comandas:
 }
 ~~~
 
-O exemplo acima abrevia itens do pedido; em uma resposta real, eles seguem o formato completo de PedidoView. O subtotal da comanda soma somente pedidos enviados e não cancelados. Total = subtotal + taxaServico + couvert. A taxa percentual e o couvert são fixados na abertura; o caixa pode remover a taxa durante o fechamento.
+O exemplo acima abrevia itens do pedido; em uma resposta real, eles seguem o formato completo de PedidoView. O subtotal da comanda soma somente pedidos enviados e não cancelados. Total = subtotal + taxaServico + couvert. A taxa percentual e o couvert são fixados na abertura; o garçom pode remover a taxa durante o fechamento. O gerente define o couvert global em GET/PUT `/admin/configuracao/couvert` com corpo `{"valor":12.00}`. A mudança vale somente para novas comandas.
 
 ### Demais formatos
 
@@ -424,7 +426,7 @@ RASCUNHO -> RECEBIDO -> EM_PREPARO -> PRONTO -> ENTREGUE
 RECEBIDO, EM_PREPARO ou PRONTO -> CANCELADO
 ~~~
 
-RASCUNHO -> RECEBIDO acontece somente no envio pelo tablet. No Kanban, COZINHA, GARCOM ou GERENTE podem avançar um passo. CANCELADO exige motivo. Em RECEBIDO, cancelamento pelo Kanban exige GERENTE; o tablet pode cancelar seu próprio pedido ainda em RECEBIDO. Em EM_PREPARO ou PRONTO, a equipe autorizada do Kanban pode cancelar com motivo. Só GERENTE pode retroceder de RECEBIDO, EM_PREPARO, PRONTO ou ENTREGUE para um estado anterior entre RECEBIDO, EM_PREPARO e PRONTO, também com motivo. ENTREGUE não pode ser cancelado. Transição inválida dá 409 com estadoAtual e transicoesPermitidas.
+RASCUNHO -> RECEBIDO acontece somente no envio pelo tablet. No Kanban, COZINHA, GARCOM ou GERENTE podem avançar um passo. CANCELADO exige motivo. Em RECEBIDO, cancelamento pelo Kanban exige GERENTE; o tablet pode cancelar seu próprio pedido ainda em RECEBIDO. Em EM_PREPARO ou PRONTO, a equipe autorizada do Kanban pode cancelar com motivo. GARCOM e GERENTE podem retroceder de EM_PREPARO, PRONTO ou ENTREGUE para um estado anterior entre RECEBIDO, EM_PREPARO e PRONTO, também com motivo. ENTREGUE não pode ser cancelado. Transição inválida dá 409 com estadoAtual e transicoesPermitidas.
 
 AtendimentoInput para PATCH /admin/chamados/{id}:
 
@@ -540,10 +542,10 @@ UsuarioInput para POST /admin/usuarios:
 {"nome":"Ana","username":"ana","senha":"senha-de-8-ou-mais","papel":"GARCOM","ativo":true}
 ~~~
 
-nome até 120 caracteres; username até 80 e único; senha com pelo menos 8 caracteres; papel COZINHA, GARCOM, CAIXA ou GERENTE. PATCH envia nome, username, papel e ativo novamente; senha é opcional e, quando ausente, a senha anterior permanece. Exemplo:
+nome até 120 caracteres; username até 80 e único; senha com pelo menos 8 caracteres; papel COZINHA, GARCOM ou GERENTE. PATCH envia nome, username, papel e ativo novamente; senha é opcional e, quando ausente, a senha anterior permanece. Exemplo:
 
 ~~~json
-{"nome":"Ana Silva","username":"ana","papel":"CAIXA","ativo":true}
+{"nome":"Ana Silva","username":"ana","papel":"GARCOM","ativo":true}
 ~~~
 
 DELETE apenas torna ativo=false; usuários inativos não conseguem fazer login. Nenhuma resposta de usuário inclui senha ou hash.
@@ -602,14 +604,14 @@ Vendas por categoria usam a categoria preservada no item ao montar o pedido. Rec
 4. Enviar pelo POST /mesa/pedidos/{id}/enviar. Exibir numeroDiario e diaOperacional. Em caso de perda de resposta, repetir **o mesmo pedidoId**; o envio é idempotente. Criar outro rascunho para um novo pedido.
 5. Consultar GET /mesa/comanda para mostrar todos os pedidos da sessão atual. É esse endpoint que permite recuperar a tela após recarregar o frontend. Para atualização rápida de um pedido, ouvir SSE por pedido e então refazer GET /mesa/comanda.
 6. O cliente pode cancelar seu próprio pedido somente enquanto status=RECEBIDO. Pode chamar o garçom com tipo GARCOM, CONTA ou AJUDA.
-7. Quando o caixa inicia o fechamento sem pagamento, estado da mesa vira AGUARDANDO_PAGAMENTO; mostre o valor e bloqueie criação de pedidos. Quando a conta fica PAGA, GET /mesa/estado volta a LIVRE. Apague dados de carrinho/comanda/pedido da sessão anterior para o próximo cliente.
+7. Quando o garçom inicia o fechamento sem pagamento, estado da mesa vira AGUARDANDO_PAGAMENTO; mostre o valor e bloqueie criação de pedidos. Quando a conta fica PAGA, o tablet é revogado na mesma transação e volta ao pareamento. Apague dados de carrinho/comanda/pedido da sessão anterior para o próximo cliente.
 
-### 6.3 Cozinha, bar, garçom e caixa
+### 6.3 Cozinha, bar e garçom
 
 1. A equipe faz POST /auth/login e guarda o JWT até expirar. A UI deve adaptar menus pelo papel.
 2. Cozinha e bar fazem GET /admin/kanban com estacao=COZINHA ou BAR e assinam GET /admin/kanban/eventos. O retorno tem colunas recebido, emPreparo e pronto ordenadas por enviadoEm. ENTREGUE e CANCELADO saem do Kanban.
 3. Um pedido misto aparece nos filtros de COZINHA e BAR, mas existe **um único status para o pedido inteiro**. Não crie estados independentes por estação. Antes de mover, use a versao atual do cartão; ao receber 409, atualize o Kanban.
-4. Garçom consulta e atende chamados. Caixa consulta a comanda, inicia AGUARDANDO_PAGAMENTO se precisar, registra valores aplicados e troco. A API não processa PIX/cartão; a confirmação financeira acontece fora dela.
+4. Garçom consulta e atende chamados, consulta a comanda, inicia AGUARDANDO_PAGAMENTO se precisar e registra valores aplicados e troco. A API não processa PIX/cartão; a confirmação financeira acontece fora dela.
 5. Gerente administra dados e vê o dashboard. Desativar produto/adicional não modifica snapshots de pedidos já criados.
 
 ### 6.4 SSE com Bearer
@@ -638,7 +640,7 @@ Comentários `:heartbeat` são enviados a cada 15 segundos e podem ser ignorados
 ## 7. Ambiente de desenvolvimento e limites conhecidos
 
 - O seed normal cria 12 mesas, 43 produtos listados na especificação, 20 adicionais, imagens SVG genéricas para os produtos e um gerente quando ADMIN_USERNAME/ADMIN_PASSWORD são definidos. O seed não duplica dados no reinício e não troca a senha de um gerente já existente. As imagens são armazenadas em PRODUCT_IMAGES_DIR (padrão `./data/product-images`; volume `product_images` no Compose).
-- O perfil dev adiciona usuários dev_cozinha_1/2, dev_garcom_1/2, dev_caixa_1/2 e dev_gerente_1/2, todos com senha dev12345678, além de tablets, pelo menos 54 pedidos (45 históricos pagos e 9 ativos), 12 chamados e solicitações de pareamento. Não use esses dados como comportamento obrigatório de produção.
+- O perfil dev adiciona usuários dev_cozinha_1/2, dev_garcom_1/2 e dev_gerente_1/2, todos com senha dev12345678, além de tablets, pelo menos 54 pedidos (45 históricos pagos e 9 ativos), 12 chamados e solicitações de pareamento. Não use esses dados como comportamento obrigatório de produção.
 - Rascunhos sem atualização por 30 minutos são removidos por job executado a cada 5 minutos. A UI deve tratar pedido que desapareceu com 404 e permitir criar outro.
 - A API não oferece endpoint de logout, detalhe isolado de pedido do tablet, upload de imagens, estoque, separação de conta ou checkout online.
 - Coleção Bruno com exemplos de todas as áreas: ../bruno/README.md. Instruções de execução e variáveis: ../README.md. Decisões do backend: DECISOES.md.
