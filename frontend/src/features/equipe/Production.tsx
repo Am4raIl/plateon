@@ -11,7 +11,6 @@ import {
   useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { staffApi } from "../../api/client";
 import { useAction, useRead } from "../../api/hooks";
@@ -145,17 +144,11 @@ function Card({
   denied?: boolean;
 }) {
   const role = useSession((s) => s.staff!.papel);
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    isDragging,
-  } = useDraggable({
-    id: overlay ? `preview-${card.pedido.id}` : card.pedido.id,
-    disabled: disabled || overlay,
-  });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } =
+    useDraggable({
+      id: overlay ? `preview-${card.pedido.id}` : card.pedido.id,
+      disabled: disabled || overlay,
+    });
   const p = card.pedido;
   const mixed = new Set(p.itens.map((i) => i.estacao)).size > 1;
   return (
@@ -167,9 +160,6 @@ function Card({
       data-pedido={p.id}
       data-versao={p.versao}
       aria-hidden={overlay || undefined}
-      style={{
-        transform: overlay ? undefined : CSS.Translate.toString(transform),
-      }}
       className={`${s.card} ${card.atrasado ? s.late : ""} ${isDragging ? s.dragging : ""} ${pending ? s.pending : ""} ${overlay ? s.overlay : ""}`}
     >
       <div className={s.cardMeta}>
@@ -326,46 +316,96 @@ export function Production() {
   const positions = useRef(
     new Map<string, { rect: DOMRect; version: number }>(),
   );
+  const layoutAnimations = useRef(new Map<string, Animation>());
+  const dropPosition = useRef<{ id: string; rect: DOMRect } | null>(null);
+  const movePositions = useRef<Map<string, DOMRect> | null>(null);
   const path = `/admin/kanban${station ? `?estacao=${station}` : ""}`;
   const key = ["staff", path];
   const board = useRead<Kanban>("staff", path, 15000, !active && !pending);
   const role = useSession((s) => s.staff!.papel);
   const username = useSession((s) => s.staff!.username);
   useLayoutEffect(() => {
-    if (active) return;
     const next = new Map<string, { rect: DOMRect; version: number }>();
-    boardElement.current
-      ?.querySelectorAll<HTMLElement>("[data-pedido]")
-      .forEach((node) => {
-        const id = node.dataset.pedido!;
-        const rect = node.getBoundingClientRect();
-        const version = Number(node.dataset.versao);
-        const previous = positions.current.get(id);
-        if (
-          previous &&
-          node.animate &&
-          !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ) {
-          const x = previous.rect.left - rect.left,
-            y = previous.rect.top - rect.top;
-          if (x || y)
-            node.animate(
-              [
-                { transform: `translate(${x}px,${y}px)` },
-                { transform: "translate(0,0)" },
-              ],
-              { duration: 280, easing: "cubic-bezier(.2,.7,.2,1)" },
-            );
-          if (version > previous.version)
-            node.animate(
-              [{ backgroundColor: "#E1EAE5" }, { backgroundColor: "#FFFCF7" }],
-              { duration: 1200 },
-            );
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const nodes = Array.from(
+      boardElement.current?.querySelectorAll<HTMLElement>("[data-pedido]") ??
+        [],
+    );
+    // Read the visible positions together, then cancel movement together. This
+    // avoids a layout recalculation for each card when a new order arrives.
+    const visible = nodes.map((node) => {
+      const id = node.dataset.pedido!;
+      const animation = layoutAnimations.current.get(id);
+      return {
+        node,
+        id,
+        rect:
+          animation?.playState === "running"
+            ? node.getBoundingClientRect()
+            : null,
+        animation,
+        version: Number(node.dataset.versao),
+      };
+    });
+    visible.forEach(({ animation }) => animation?.cancel());
+    layoutAnimations.current.clear();
+    const measured = visible.map((item) => ({
+      ...item,
+      target: item.node.getBoundingClientRect(),
+    }));
+    measured.forEach(({ node, id, rect: visibleRect, target, version }) => {
+      const previous = positions.current.get(id);
+      // The DOM has already moved by this point. Apply the running animation's
+      // offset to the previous layout position to avoid a mid-motion jump.
+      const movingFrom =
+        visibleRect && previous
+          ? {
+              left: previous.rect.left + visibleRect.left - target.left,
+              top: previous.rect.top + visibleRect.top - target.top,
+            }
+          : null;
+      const from =
+        dropPosition.current?.id === id
+          ? dropPosition.current.rect
+          : (movePositions.current?.get(id) ?? movingFrom ?? previous?.rect);
+      if (from && node.animate && !reducedMotion) {
+        const x = from.left - target.left;
+        const y = from.top - target.top;
+        if (Math.abs(x) > 1 || Math.abs(y) > 1) {
+          const animation = node.animate(
+            [
+              { transform: `translate(${x}px,${y}px)` },
+              { transform: "translate(0,0)" },
+            ],
+            { duration: 380, easing: "cubic-bezier(.22,1,.36,1)" },
+          );
+          layoutAnimations.current.set(id, animation);
+          animation.onfinish = () => {
+            if (layoutAnimations.current.get(id) === animation)
+              layoutAnimations.current.delete(id);
+          };
         }
-        next.set(id, { rect, version });
-      });
+        if (previous && version > previous.version)
+          node.animate(
+            [{ backgroundColor: "#E1EAE5" }, { backgroundColor: "#FFFCF7" }],
+            { duration: 1200 },
+          );
+      } else if (!previous && !reducedMotion && node.animate) {
+        node.animate([{ opacity: 0 }, { opacity: 1 }], {
+          delay: 140,
+          duration: 280,
+          easing: "ease-out",
+          fill: "backwards",
+        });
+      }
+      next.set(id, { rect: target, version });
+    });
     positions.current = next;
-  }, [board.data, active]);
+    dropPosition.current = null;
+    movePositions.current = null;
+  }, [board.data]);
   const billIds = Array.from(
     new Set(
       [
@@ -407,6 +447,15 @@ export function Production() {
   };
   const connection = useSse("staff", "/admin/kanban/eventos", refresh);
   const notify = useNotices((s) => s.add);
+  const captureMovePositions = () => {
+    movePositions.current = new Map(
+      Array.from(
+        boardElement.current?.querySelectorAll<HTMLElement>("[data-pedido]") ??
+          [],
+        (node) => [node.dataset.pedido!, node.getBoundingClientRect()],
+      ),
+    );
+  };
   const move = useAction(
     async ({
       card,
@@ -419,7 +468,7 @@ export function Production() {
     }) => {
       changing.current = true;
       setPending(card.pedido.id);
-      await client.cancelQueries({ queryKey: key });
+      const cancelled = client.cancelQueries({ queryKey: key });
       const snapshot = client.getQueryData<Kanban>(key);
       if (snapshot)
         client.setQueryData(
@@ -427,6 +476,7 @@ export function Production() {
           optimisticMove(snapshot, card.pedido.id, target),
         );
       try {
+        await cancelled;
         return await staffApi<PedidoView>(
           `/admin/kanban/${card.pedido.id}/status`,
           "PATCH",
@@ -517,6 +567,17 @@ export function Production() {
   const onEnd = (event: DragEndEvent) => {
     const card = cards.find((c) => c.pedido.id === event.active.id);
     const target = event.over?.id as StatusPedido | undefined;
+    if (
+      card &&
+      target &&
+      nextStatus(card.pedido.status) === target &&
+      target !== "ENTREGUE"
+    ) {
+      const rect = overlayNode.current?.getBoundingClientRect();
+      if (rect) dropPosition.current = { id: card.pedido.id, rect };
+    }
+    if (card && target && nextStatus(card.pedido.status) === target)
+      captureMovePositions();
     drag.current = false;
     resetTilt();
     setActive(null);
@@ -674,12 +735,13 @@ export function Production() {
                       }
                       pending={pending === card.pedido.id}
                       locked={lockedIds.has(card.pedido.comandaId)}
-                      onMove={() =>
+                      onMove={() => {
+                        captureMovePositions();
                         move.mutate({
                           card,
                           target: nextStatus(card.pedido.status)!,
-                        })
-                      }
+                        });
+                      }}
                       onDetail={() => setDetails(card)}
                       onDestructive={(target) => {
                         setConfirm({ card, target });
@@ -692,12 +754,7 @@ export function Production() {
             ))}
           </div>
           {dragging?.pedido.status === "PRONTO" && <Delivery />}
-          <DragOverlay
-            dropAnimation={{
-              duration: 280,
-              easing: "cubic-bezier(.2,.7,.2,1)",
-            }}
-          >
+          <DragOverlay dropAnimation={null}>
             {dragging && (
               <Card
                 card={dragging}

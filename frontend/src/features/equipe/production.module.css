@@ -22,9 +22,9 @@
   gap: 14px;
   align-content: start;
   transition:
-    border-color 0.2s,
-    background-color 0.2s,
-    box-shadow 0.2s;
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 .columnHeader {
   display: flex;
@@ -37,11 +37,13 @@
 }
 .over {
   border-color: var(--verde);
-  box-shadow: inset 0 0 0 1px var(--verde);
+  box-shadow:
+    inset 0 0 0 1px var(--verde),
+    0 8px 28px #163b3020;
 }
 .allowed {
   background: var(--verde-t);
-  border-color: var(--verde);
+  border-color: #244e3f70;
 }
 .card {
   background: var(--porcelana);
@@ -52,10 +54,14 @@
   gap: 16px;
   position: relative;
   transition:
-    opacity 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
-  animation: enter 0.2s;
+    opacity 0.2s ease,
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+  box-shadow: 0 2px 8px #1f302908;
+}
+.card:hover {
+  box-shadow: 0 8px 24px #1f302916;
 }
 .card :global(.tableNumber) {
   font-size: 30px;
@@ -121,20 +127,34 @@
   color: var(--erro);
 }
 .dragging {
-  opacity: 0.45;
-  border: 2px dashed var(--verde);
+  background: var(--verde-t);
+  border: 2px dashed #244e3f88;
+  box-shadow: inset 0 0 0 1px #244e3f12;
+}
+.dragging > * {
+  visibility: hidden;
+}
+.dragging::after {
+  content: "Movendo pedido";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--verde);
+  font-size: 14px;
+  font-weight: 600;
 }
 .overlay {
-  box-shadow: 0 18px 40px #0003;
+  box-shadow: 0 22px 48px #162f2940;
   opacity: 1;
   width: 100%;
-  animation: none;
   transform: rotate(var(--tilt, 0deg));
   transform-origin: 50% 80%;
-  transition: transform 90ms ease-out;
+  transition: transform 120ms ease-out;
+  pointer-events: none;
 }
 .pending {
-  opacity: 0.75;
+  box-shadow: 0 10px 28px #163b3026;
 }
 .delivery {
   margin-top: 20px;
@@ -241,6 +261,9 @@
   }
   .overlay {
     transform: none !important;
+  }
+  .card:hover {
+    box-shadow: none;
   }
 }
 @keyframes flash {

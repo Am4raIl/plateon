@@ -41,3 +41,23 @@ it("entrega remove do quadro sem criar quarta coluna", () => {
     pronto: [],
   });
 });
+it("mantém a ordem por envio e id ao mudar de coluna", () => {
+  const makeCard = (id: string, enviadoEm: string) => ({
+    pedido: { ...makeOrder(), id, enviadoEm },
+    numeroMesa: 7,
+    minutosDecorridos: 28,
+    atrasado: false,
+  });
+  const board: Kanban = {
+    recebido: [makeCard("b", "2026-11-07T10:00:00Z")],
+    emPreparo: [
+      makeCard("c", "2026-11-07T10:00:00Z"),
+      makeCard("a", "2026-11-07T10:00:00Z"),
+    ],
+    pronto: [],
+  };
+
+  expect(
+    optimisticMove(board, "b", "EM_PREPARO").emPreparo.map((c) => c.pedido.id),
+  ).toEqual(["a", "b", "c"]);
+});
