@@ -17,7 +17,7 @@ async function login(page: Page, username = "gerente") {
 }
 async function tablet(page: Page) {
   await page.addInitScript(() =>
-    localStorage.setItem("panteon.tablet", "mock-tablet"),
+    localStorage.setItem("plateon.tablet", "mock-tablet"),
   );
   await page.goto("/mesa/boas-vindas");
   await expect(
@@ -110,7 +110,7 @@ test("saída após o pagamento libera o tablet para pareamento", async ({
   await expect(page).toHaveURL(/mesa\/pareamento/);
   await expect(page.getByLabel("Código de pareamento")).toBeVisible();
   expect(
-    await page.evaluate(() => localStorage.getItem("panteon.tablet")),
+    await page.evaluate(() => localStorage.getItem("plateon.tablet")),
   ).toBeNull();
 });
 test("pedido completo do cardápio até entrega e atualização no tablet", async ({

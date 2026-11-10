@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { loginSchema, type LoginView } from "../api/types";
 function readTablet() {
   try {
-    return localStorage.getItem("panteon.tablet");
+    return localStorage.getItem("plateon.tablet");
   } catch {
     return null;
   }
 }
 function readStaff() {
   try {
-    const raw = sessionStorage.getItem("panteon.equipe");
+    const raw = sessionStorage.getItem("plateon.equipe");
     if (!raw) return null;
     const value = loginSchema
       .extend({ username: loginSchema.shape.token })
@@ -33,8 +33,8 @@ export const useSession = create<State>((set) => ({
   staff: readStaff(),
   setTablet: (token) => {
     try {
-      if (token) localStorage.setItem("panteon.tablet", token);
-      else localStorage.removeItem("panteon.tablet");
+      if (token) localStorage.setItem("plateon.tablet", token);
+      else localStorage.removeItem("plateon.tablet");
     } catch {
       /* A sessão ainda funciona em memória. */
     }
@@ -43,8 +43,8 @@ export const useSession = create<State>((set) => ({
   setStaff: (staff) => {
     try {
       if (staff)
-        sessionStorage.setItem("panteon.equipe", JSON.stringify(staff));
-      else sessionStorage.removeItem("panteon.equipe");
+        sessionStorage.setItem("plateon.equipe", JSON.stringify(staff));
+      else sessionStorage.removeItem("plateon.equipe");
     } catch {
       /* A sessão ainda funciona em memória. */
     }

@@ -26,7 +26,7 @@ export function Brand() {
         />
         <circle cx="23" cy="26" r="2.4" fill="#A88954" />
       </svg>
-      Panteon
+      Plateon
     </span>
   );
 }

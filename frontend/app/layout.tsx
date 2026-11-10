@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "../src/design/tokens.css";
 
 export const metadata: Metadata = {
-  title: "Panteon",
+  title: "Plateon",
   description: "Pedidos à mesa e operação do restaurante",
 };
 

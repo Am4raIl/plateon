@@ -70,6 +70,16 @@ docker compose up --build -d
 
 Use esse comando na primeira execução ou quando alterar o Dockerfile ou as dependências da imagem.
 
+Para desenvolver com atualização automática, inicie uma vez com:
+
+~~~powershell
+docker compose -f compose.yaml -f compose.dev.yaml up --build
+~~~
+
+Enquanto os containers estiverem ativos, o Next atualiza a interface ao salvar arquivos do frontend. O container da API observa `backend/src` e `backend/pom.xml`, recompila e reinicia a aplicação após alterações. Não é necessário repetir o comando após cada alteração. Para encerrar, pressione `Ctrl+C` e execute `docker compose -f compose.yaml -f compose.dev.yaml down` se quiser parar os serviços.
+
+Se usar Podman, substitua `docker compose` por `podman compose` nos comandos acima. O `podman-compose` não aceita `--watch`; use o comando de desenvolvimento mostrado acima sem essa opção. A recarga automática já ocorre dentro dos containers.
+
 | Serviço | Endereço |
 | --- | --- |
 | Aplicação web | <http://localhost:3000> |

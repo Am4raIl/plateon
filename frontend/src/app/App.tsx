@@ -279,7 +279,7 @@ function ScrollTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-    document.title = `Panteon · ${pathname.includes("/mesa") ? "À mesa" : "Restaurante"}`;
+    document.title = `Plateon · ${pathname.includes("/mesa") ? "À mesa" : "Restaurante"}`;
   }, [pathname]);
   return null;
 }

@@ -1,6 +1,6 @@
-# Panteon · frontend
+# Plateon · frontend
 
-Aplicação para tablet fixo, cozinha/bar, garçom e gerência. O [guia da API](../backend/docs/docs.md) descreve o contrato atual; o [brief original](docs/GERACAO_FRONTEND.md) registra as decisões visuais iniciais. A interface usa a marca **Panteon**; diretório e backend continuam Plateon.
+Aplicação para tablet fixo, cozinha/bar, garçom e gerência. O [guia da API](../backend/docs/docs.md) descreve o contrato atual; o [brief original](docs/GERACAO_FRONTEND.md) registra as decisões visuais iniciais. A interface, o diretório e o backend usam a marca **Plateon**.
 
 ## Executar
 

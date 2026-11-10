@@ -1,3 +1,9 @@
+FROM docker.io/library/maven:3.9-eclipse-temurin-21 AS dev
+WORKDIR /app
+COPY dev-run.sh /usr/local/bin/plateon-dev-run
+RUN chmod +x /usr/local/bin/plateon-dev-run
+CMD ["plateon-dev-run"]
+
 FROM docker.io/library/maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 COPY pom.xml .

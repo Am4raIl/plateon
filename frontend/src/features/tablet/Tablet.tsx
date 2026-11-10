@@ -1098,7 +1098,7 @@ function CallSheet({
   const notify = useNotices((s) => s.add);
   const [lastCall, setLastCall] = useState(() => {
     try {
-      return Number(sessionStorage.getItem("panteon.lastCall")) || 0;
+      return Number(sessionStorage.getItem("plateon.lastCall")) || 0;
     } catch {
       return 0;
     }
@@ -1116,7 +1116,7 @@ function CallSheet({
         const time = Date.now();
         setLastCall(time);
         try {
-          sessionStorage.setItem("panteon.lastCall", String(time));
+          sessionStorage.setItem("plateon.lastCall", String(time));
         } catch {
           /* Em memória. */
         }

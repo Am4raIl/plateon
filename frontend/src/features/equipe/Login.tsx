@@ -59,7 +59,7 @@ export function Login() {
             Da primeira escolha à última mesa, o cuidado está em cada detalhe.
           </p>
         </div>
-        <small>Panteon · Operação do restaurante</small>
+        <small>Plateon · Operação do restaurante</small>
       </aside>
       <main id="conteudo" className={s.loginMain}>
         <div className={s.loginForm}>

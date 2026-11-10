@@ -5,7 +5,7 @@ Implementação em 07/11/2026. Precedência: contrato e código do backend, depo
 | Ponto | Decisão e motivo |
 |---|---|
 | Stack atual | Next.js 16/React 19/TypeScript. O App Router hospeda as telas atuais em um componente cliente, preservando o React Router usado pelos fluxos. `/api/v1` passa pelo proxy do Next para o backend na porta 8081. |
-| Marca | Interface Panteon; backend e diretório Plateon. |
+| Marca | Interface, backend e diretório Plateon. |
 | Login | Label **Usuário**, pois a API recebe `username`, não e-mail. LoginView não fornece nome; o cabeçalho usa o usuário informado e o papel, sem inventar identidade. |
 | Pareamento | Rotas públicas `/dispositivos/pareamento` e `/dispositivos/pareamento/{id}`, sem Bearer. A rota citada no design não existe. |
 | Mesa no garçom | O garçom pode listar mesas ativas para parear tablets e abrir comandas, consultar dispositivos e revogar um pareamento. A edição dos dispositivos continua restrita ao gerente. UUIDs não aparecem na interface. |

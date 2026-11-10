@@ -627,7 +627,7 @@ export function Checkout() {
             <h2>O que já foi recebido</h2>
             <p>
               Registre o que a equipe já confirmou na maquininha, no banco ou em
-              mãos. O Panteon não cobra nem gera PIX. Várias formas somam o
+              mãos. O Plateon não cobra nem gera PIX. Várias formas somam o
               total da conta, não dividem por pessoa.
             </p>
             {payments.length > 0 && (
