@@ -43,7 +43,7 @@
     0 8px 28px #00000020;
 }
 .allowed {
-  background: #292d2a;
+  background: var(--drop-bg);
   border-color: #ad884866;
 }
 .card {

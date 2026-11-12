@@ -14,6 +14,7 @@ import { friendlyError, imageUrl } from "../api/client";
 import { useNotices, type Notice } from "../app/store";
 import { labels } from "../lib/format";
 import s from "./ui.module.css";
+import { menuPhoto } from "./menu-photos";
 export function Brand() {
   return (
     <span className="brand">
@@ -487,12 +488,34 @@ export function Photo({
   name: string;
   className?: string;
 }) {
+  const photo = menuPhoto(name, url);
+  const source = photo?.src ?? url;
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [url]);
+  useEffect(() => setFailed(false), [source]);
   return (
     <div className={`${s.photo} ${className}`}>
-      {url && !failed ? (
-        <img src={imageUrl(url)} alt={name} onError={() => setFailed(true)} />
+      {source && !failed ? (
+        <>
+          <img
+            src={imageUrl(source)}
+            alt={name}
+            loading="lazy"
+            decoding="async"
+            onError={() => setFailed(true)}
+          />
+          {photo && (
+            <a
+              className={s.photoCredit}
+              href={`/menu/credits.html#${photo.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Créditos da foto de ${name}`}
+              title={`Foto ilustrativa · ${photo.author} · ${photo.license}`}
+            >
+              Créditos
+            </a>
+          )}
+        </>
       ) : (
         <svg viewBox="0 0 240 160" role="img" aria-label={name}>
           <ellipse cx="120" cy="87" rx="86" ry="53" fill="#ddd6c5" />

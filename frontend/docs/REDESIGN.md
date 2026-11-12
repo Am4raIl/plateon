@@ -1,5 +1,33 @@
 # Reformulação visual · 11/11/2026
 
+## Aparência e fotografias · 12/11/2026
+
+O seletor de aparência oferece Claro, Padrão e Escuro. Padrão mantém a paleta
+anterior; Claro usa superfícies marfim e dourado mais profundo para contraste;
+Escuro usa carvão mais escuro. A preferência é local ao navegador, acompanha
+a navegação, sincroniza entre abas e é aplicada antes da aplicação carregar.
+Se o armazenamento estiver indisponível, o seletor continua funcionando em
+memória. O modo padrão não depende da preferência do sistema operacional.
+
+Os 43 produtos do cardápio de referência receberam fotografias ilustrativas
+locais em `public/menu/`, convertidas para WebP e carregadas sob demanda
+(aproximadamente 4,34 MiB no total). `src/design/menu-photos.json` registra a
+correspondência por nome, autoria, licença e fonte de cada fotografia.
+`public/menu/credits.html` disponibiliza os créditos pelo link em cada imagem.
+As fotos representam os pratos e bebidas; apresentação, acompanhamentos e
+variações regionais podem diferir do produto servido pelo restaurante.
+
+Uma imagem personalizada cadastrada continua tendo prioridade. A referência
+local substitui apenas uma imagem ausente ou o SVG antigo de demonstração dos
+produtos conhecidos. Produtos novos continuam usando o endereço de imagem
+cadastrado na gerência. Não é necessário alterar o banco para exibir as fotos.
+
+Validações: build, TypeScript e lint; persistência do tema; acessibilidade dos
+três modos em login, produção e cardápio; imagens válidas nas oito categorias;
+prioridade das fotos personalizadas; preservação do fluxo de pedido e Kanban.
+Os unitários mantêm as mesmas duas falhas preexistentes descritas abaixo.
+Sem commit ou push.
+
 ## Refinamento visual · 12/11/2026
 
 - Paleta carvão, marfim e dourado preservada; superfícies com cantos suaves,
