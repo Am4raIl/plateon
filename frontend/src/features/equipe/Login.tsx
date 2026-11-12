@@ -64,7 +64,9 @@ export function Login() {
       </aside>
       <main id="conteudo" className={s.loginMain}>
         <div className={s.loginForm}>
-          <ThemeToggle />
+          <div className={s.loginAppearance}>
+            <ThemeToggle />
+          </div>
           <div>
             <div className="section-label">Acesso da equipe</div>
             <h1>Entrar</h1>

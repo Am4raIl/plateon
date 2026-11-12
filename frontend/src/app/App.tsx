@@ -250,7 +250,6 @@ function StaffLayout() {
           )}
         </nav>
         <footer>
-          <ThemeToggle />
           <strong>{session.username}</strong>
           <p>
             {
@@ -261,6 +260,7 @@ function StaffLayout() {
               }[role]
             }
           </p>
+          <ThemeToggle />
           <Button variant="ghost" onClick={logout}>
             Sair da conta
           </Button>

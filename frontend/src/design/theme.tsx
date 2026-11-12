@@ -71,6 +71,7 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
       className={`${s.toggle} ${compact ? s.compact : ""}`}
       role="group"
       aria-label="Aparência"
+      data-theme={theme}
     >
       {options.map((option, index) => (
         <button

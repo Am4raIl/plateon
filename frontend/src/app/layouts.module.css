@@ -172,6 +172,9 @@
   font-size: 52px;
   margin-bottom: 12px;
 }
+.loginAppearance {
+  justify-self: end;
+}
 .home {
   min-height: 100dvh;
   display: grid;
