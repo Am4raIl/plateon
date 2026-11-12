@@ -47,6 +47,7 @@ import { labels, mesa, moeda } from "../../lib/format";
 import { connectSse, type Connection } from "../../lib/sse";
 import layout from "../../app/layouts.module.css";
 import s from "./tablet.module.css";
+import { ThemeToggle } from "../../design/theme";
 type TabletContext = {
   state: EstadoMesa | null | undefined;
   bill: ComandaView | null | undefined;
@@ -156,6 +157,7 @@ export function TabletLayout() {
         <Button variant="secondary" onClick={() => setCalling(true)}>
           Chamar garçom
         </Button>
+        <ThemeToggle compact />
       </header>
       <main id="conteudo" data-area="tablet">
         {state.isError ? (
@@ -291,6 +293,7 @@ export function Pairing() {
     <main id="conteudo" className="blank">
       <div className={s.pairing}>
         <Brand />
+        <ThemeToggle />
         <div className="section-label">Bem-vindo à casa</div>
         <h1>{expired ? "Este código venceu" : "Vamos preparar sua mesa"}</h1>
         <p>Peça a um garçom ou ao gerente para aprovar este código</p>

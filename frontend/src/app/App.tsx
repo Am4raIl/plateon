@@ -43,6 +43,7 @@ import {
   Devices,
 } from "../features/gerencia/Admin";
 import s from "./layouts.module.css";
+import { ThemePreferences, ThemeToggle } from "../design/theme";
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -99,7 +100,10 @@ function SessionCache() {
 function Home() {
   return (
     <main id="conteudo" className={s.home}>
-      <Brand />
+      <div className="spread">
+        <Brand />
+        <ThemeToggle compact />
+      </div>
       <div>
         <div className="section-label">À mesa e nos bastidores</div>
         <h1>
@@ -246,6 +250,7 @@ function StaffLayout() {
           )}
         </nav>
         <footer>
+          <ThemeToggle />
           <strong>{session.username}</strong>
           <p>
             {
@@ -264,6 +269,7 @@ function StaffLayout() {
       <div>
         <header className={s.staffHeader}>
           <Brand />
+          <ThemeToggle compact />
           <div>
             <p>
               {session.username} ·{" "}
@@ -324,6 +330,7 @@ export function App() {
           Ir para o conteúdo
         </a>
         <SessionCache />
+        <ThemePreferences />
         <ScrollTop />
         <Offline />
         <Routes>

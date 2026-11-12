@@ -24,6 +24,14 @@
   --on-accent: #202526;
   --on-danger: #30201e;
   --ink-deep: #1d2224;
+  --head-solid: #23282a;
+  --head-middle: #23282af2;
+  --head-end: #23282a66;
+  --head-menu-start: #23282afa;
+  --head-menu-end: #23282aa8;
+  --drop-bg: #292d2a;
+  --photo-light: #45463a;
+  --photo-dark: #242b2b;
   --r-tag: 6px;
   --r-ctl: 10px;
   --r-surf: 16px;
@@ -36,6 +44,62 @@
   --font-display:
     "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --font-ui: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --marfim: #f6f3ec;
+  --marfim-2: #eeeae1;
+  --porcelana: #fffdf8;
+  --verde: #77551f;
+  --verde-2: #634415;
+  --verde-t: #eae0ca;
+  --carvao: #292f30;
+  --mudo: #62665f;
+  --latao: #987239;
+  --latao-txt: #77551f;
+  --fio: #ddd9cf;
+  --fio-forte: #999b8f;
+  --erro: #9f382d;
+  --erro-bg: #f9e6e1;
+  --atencao: #735318;
+  --atencao-bg: #f4e8c7;
+  --info: #305d76;
+  --info-bg: #e5edf3;
+  --sucesso: #376448;
+  --sucesso-bg: #e4eee4;
+  --on-accent: #fffaf0;
+  --on-danger: #fffaf0;
+  --ink-deep: #ece8de;
+  --head-solid: #f4f0e6;
+  --head-middle: #f4f0e6f2;
+  --head-end: #f4f0e666;
+  --head-menu-start: #f4f0e6fa;
+  --head-menu-end: #f4f0e6a8;
+  --drop-bg: #eae6d8;
+  --photo-light: #e8e1d2;
+  --photo-dark: #ddd7c8;
+  --shadow-soft: 0 4px 20px #40351c08;
+  --shadow-raised: 0 12px 32px #40351c12;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --marfim: #121718;
+  --marfim-2: #0e1213;
+  --porcelana: #1c2224;
+  --verde-t: #302e25;
+  --carvao: #f2ede3;
+  --mudo: #b9bcb3;
+  --fio: #343d3b;
+  --fio-forte: #747b70;
+  --ink-deep: #0b1011;
+  --head-solid: #151b1d;
+  --head-middle: #151b1df2;
+  --head-end: #151b1d66;
+  --head-menu-start: #151b1dfa;
+  --head-menu-end: #151b1da8;
+  --drop-bg: #24271f;
+  --photo-light: #34362d;
+  --photo-dark: #161d1d;
 }
 * {
   box-sizing: border-box;
@@ -53,6 +117,9 @@ body {
   font: 15px/1.6 var(--font-ui);
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
 }
 button,
 input,
@@ -263,7 +330,12 @@ form {
   border-radius: var(--r-surf);
   background:
     radial-gradient(circle at 94% 22%, #ad88481a 0 11px, transparent 12px),
-    linear-gradient(90deg, #23282a 35%, #23282af2 60%, #23282a66),
+    linear-gradient(
+      90deg,
+      var(--head-solid) 35%,
+      var(--head-middle) 60%,
+      var(--head-end)
+    ),
     url("/art-deco.svg") right center / auto,
     var(--ink-deep);
 }
@@ -592,7 +664,7 @@ form {
 }
 input::placeholder,
 textarea::placeholder {
-  color: #a3a59e;
+  color: var(--mudo);
   opacity: 1;
 }
 tbody tr {

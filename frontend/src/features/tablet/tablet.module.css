@@ -81,7 +81,7 @@
   border-top-color: var(--latao);
   border-radius: var(--r-surf);
   background:
-    linear-gradient(90deg, #23282afa 30%, #23282aa8),
+    linear-gradient(90deg, var(--head-menu-start) 30%, var(--head-menu-end)),
     url("/art-deco.svg") center / 144px;
 }
 .menuHead :global(.section-label):after {
@@ -301,6 +301,9 @@
 .pairing :global(.brand) {
   justify-content: center;
   margin-bottom: 32px;
+}
+.pairing > [role="group"] {
+  margin-bottom: 24px;
 }
 .pairing h1 {
   margin-bottom: 16px;

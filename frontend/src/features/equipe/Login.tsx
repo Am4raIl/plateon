@@ -9,6 +9,7 @@ import { useSession } from "../../app/store";
 import { homeFor } from "../../app/permissions";
 import { Banner, Brand, Button, Input } from "../../design/ui";
 import s from "../../app/layouts.module.css";
+import { ThemeToggle } from "../../design/theme";
 const schema = z.object({
   username: z.string().trim().min(1, "Informe seu usuário."),
   senha: z.string().min(1, "Informe sua senha."),
@@ -63,6 +64,7 @@ export function Login() {
       </aside>
       <main id="conteudo" className={s.loginMain}>
         <div className={s.loginForm}>
+          <ThemeToggle />
           <div>
             <div className="section-label">Acesso da equipe</div>
             <h1>Entrar</h1>
