@@ -115,13 +115,17 @@ export function Bills() {
                 {query.data.itens.map((c) => (
                   <tr key={c.id}>
                     <th scope="row">{mesa(c.numeroMesa)}</th>
-                    <td>
+                    <td data-label="Situação">
                       <Tag status={c.status} />
                     </td>
-                    <td>{dataHora(c.abertaEm)}</td>
-                    <td>{dataHora(c.atualizadaEm)}</td>
-                    <td className="money">{moeda(c.total)}</td>
-                    <td style={{ textAlign: "center" }}>
+                    <td data-label="Aberta em">{dataHora(c.abertaEm)}</td>
+                    <td data-label="Última atualização">
+                      {dataHora(c.atualizadaEm)}
+                    </td>
+                    <td data-label="Total parcial" className="money">
+                      {moeda(c.total)}
+                    </td>
+                    <td data-label="Ações" style={{ textAlign: "center" }}>
                       <Link to={`/equipe/comandas/${c.id}`}>Ver conta →</Link>
                     </td>
                   </tr>
@@ -652,18 +656,20 @@ export function Checkout() {
                     {payments.map((p, i) => (
                       <tr key={i}>
                         <th scope="row">{labels[p.forma]}</th>
-                        <td className="money">{moeda(p.valor)}</td>
-                        <td className="money">
+                        <td data-label="Valor aplicado" className="money">
+                          {moeda(p.valor)}
+                        </td>
+                        <td data-label="Recebido" className="money">
                           {p.forma === "DINHEIRO"
                             ? moeda(p.valorRecebido ?? p.valor)
                             : "—"}
                         </td>
-                        <td className="money">
+                        <td data-label="Troco" className="money">
                           {p.forma === "DINHEIRO"
                             ? moeda((p.valorRecebido ?? p.valor) - p.valor)
                             : "—"}
                         </td>
-                        <td>
+                        <td data-label="Ações">
                           <Button
                             variant="ghost"
                             size="sm"

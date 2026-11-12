@@ -756,3 +756,74 @@ h3,
     font-size: 16px;
   }
 }
+
+/* On phones, keep every table field and action in the reading column. */
+@media (max-width: 600px) {
+  .table-wrap table,
+  .table-wrap tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .table-wrap thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .table-wrap tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 0;
+    border-bottom: 1px solid var(--fio);
+  }
+  .table-wrap tbody tr:first-child {
+    padding-top: 0;
+  }
+  .table-wrap tbody tr:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+  .table-wrap tbody th,
+  .table-wrap tbody td {
+    display: block;
+    min-width: 0;
+    padding: 8px 0;
+    border: 0;
+    text-align: left !important;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .table-wrap tbody th {
+    font-size: 18px;
+  }
+  .table-wrap td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--mudo);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .table-wrap td:last-child .actions {
+    justify-content: flex-start;
+  }
+  .table-wrap td:last-child button,
+  .table-wrap td:last-child a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    max-width: 100%;
+  }
+  .table-wrap .actions {
+    align-items: stretch;
+  }
+  .table-wrap .actions > * {
+    flex: 1 1 auto;
+  }
+}

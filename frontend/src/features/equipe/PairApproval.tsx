@@ -173,11 +173,11 @@ export function TabletOperations() {
                 {active.map((d) => (
                   <tr key={d.id}>
                     <th scope="row">{mesa(d.numeroMesa)}</th>
-                    <td>{d.nome}</td>
-                    <td>
+                    <td data-label="Tablet">{d.nome}</td>
+                    <td data-label="Pareamento">
                       <Tag>Online</Tag>
                     </td>
-                    <td>
+                    <td data-label="Ação">
                       <Button
                         size="sm"
                         variant="danger"

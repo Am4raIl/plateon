@@ -163,7 +163,7 @@ export function Dashboard() {
                   );
                 })}
               </svg>
-              <details>
+              <details className="table-wrap">
                 <summary>Ver valores por hora</summary>
                 <table>
                   <thead>
@@ -178,7 +178,7 @@ export function Dashboard() {
                     {d.vendasPorHora.map((r) => (
                       <tr key={r.hora}>
                         <th scope="row">{r.hora}h</th>
-                        <td className="money">{moeda(r.receita)}</td>
+                        <td data-label="Receita" className="money">{moeda(r.receita)}</td>
                       </tr>
                     ))}
                   </tbody>

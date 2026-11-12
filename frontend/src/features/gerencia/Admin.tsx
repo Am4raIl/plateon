@@ -580,33 +580,39 @@ function AdminList({ kind }: { kind: Kind }) {
                     </th>
                     {"categoria" in e ? (
                       <>
-                        <td>{labels[e.categoria]}</td>
-                        <td className="money">{moeda(e.preco)}</td>
-                        <td>{labels[e.estacao]}</td>
-                        <td>
+                        <td data-label="Categoria">{labels[e.categoria]}</td>
+                        <td data-label="Preço" className="money">
+                          {moeda(e.preco)}
+                        </td>
+                        <td data-label="Estação">{labels[e.estacao]}</td>
+                        <td data-label="Disponibilidade">
                           <Availability product={e} />
                         </td>
                       </>
                     ) : "username" in e ? (
                       <>
-                        <td>{e.username}</td>
-                        <td>{labels[e.papel]}</td>
+                        <td data-label="Usuário">{e.username}</td>
+                        <td data-label="Papel">{labels[e.papel]}</td>
                       </>
                     ) : "categorias" in e ? (
                       <>
-                        <td className="money">{moeda(e.preco)}</td>
-                        <td>
+                        <td data-label="Preço" className="money">
+                          {moeda(e.preco)}
+                        </td>
+                        <td data-label="Categorias">
                           {e.categorias.map((c) => labels[c]).join(", ") ||
                             "Nenhuma"}
                         </td>
                       </>
                     ) : (
-                      <td className="numeric">{e.capacidade}</td>
+                      <td data-label="Lugares" className="numeric">
+                        {e.capacidade}
+                      </td>
                     )}
-                    <td>
+                    <td data-label="Situação">
                       <Tag>{enabled ? "Ativo" : "Inativo"}</Tag>
                     </td>
-                    <td>
+                    <td data-label="Ações">
                       <div className="actions">
                         <Button
                           size="sm"
@@ -865,13 +871,15 @@ export function Devices() {
                 {visibleDevices.map((d) => (
                   <tr key={d.id} className={!d.ativo ? "inactive" : ""}>
                     <th scope="row">{d.nome}</th>
-                    <td>{mesa(d.numeroMesa)}</td>
-                    <td>
+                    <td data-label="Mesa">{mesa(d.numeroMesa)}</td>
+                    <td data-label="Pareamento">
                       <Tag>{d.ativo ? "Online" : "Revogado"}</Tag>
                     </td>
-                    <td>{relativo(d.ultimoAcessoEm)}</td>
-                    <td>{dataHora(d.pareadoEm)}</td>
-                    <td>
+                    <td data-label="Último acesso">
+                      {relativo(d.ultimoAcessoEm)}
+                    </td>
+                    <td data-label="Pareado em">{dataHora(d.pareadoEm)}</td>
+                    <td data-label="Ações">
                       {d.ativo ? (
                         <div className="actions">
                           <Button
