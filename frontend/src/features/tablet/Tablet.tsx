@@ -445,7 +445,9 @@ export function Menu() {
               />
               <div>
                 <h2>{hero.nome}</h2>
-                <p>{hero.descricao}</p>
+                {hero.descricao && (
+                  <p className={s.ingredients}>{hero.descricao}</p>
+                )}
                 <strong>{moeda(hero.preco)}</strong>
                 {hero.disponivel ? (
                   <Button
@@ -472,7 +474,9 @@ export function Menu() {
                 />
                 <div>
                   <h2>{p.nome}</h2>
-                  <p>{p.descricao}</p>
+                  {p.descricao && (
+                    <p className={s.ingredients}>{p.descricao}</p>
+                  )}
                 </div>
                 <div>
                   <strong>{moeda(p.preco)}</strong>
@@ -577,8 +581,10 @@ export function Product() {
         <div>
           <div className="section-label">{labels[product.categoria]}</div>
           <h1>{product.nome}</h1>
+          {product.descricao && (
+            <p className={s.ingredients}>{product.descricao}</p>
+          )}
         </div>
-        <p>{product.descricao}</p>
         <strong>{moeda(product.preco)}</strong>
         {product.adicionaisDisponiveis.length > 0 && (
           <fieldset className={s.extras}>

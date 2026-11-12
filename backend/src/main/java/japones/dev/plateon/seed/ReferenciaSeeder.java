@@ -30,6 +30,51 @@ public class ReferenciaSeeder implements ApplicationRunner {
         BEBIDAS|Coca-Cola Lata:7;Guaraná Lata:7;Água Mineral:5;Suco de Laranja:12;Cerveja Long Neck:12;Caipirinha:22
         SOBREMESAS|Pudim:14;Petit Gâteau:28;Brownie com Sorvete:26;Mousse de Maracujá:12;Torta de Limão:16
         """;
+    private static final Map<String,String> DESCRICOES=Map.ofEntries(
+        Map.entry("Bruschetta de Tomate","Pão, tomate, manjericão, alho e azeite."),
+        Map.entry("Bolinho de Queijo (6 un)","Massa de trigo e queijo."),
+        Map.entry("Caldinho de Feijão","Feijão, bacon, alho, cebola e cheiro-verde."),
+        Map.entry("Salada Caprese","Tomate, muçarela de búfala, manjericão e azeite."),
+        Map.entry("Pastelzinho de Carne (8 un)","Massa de pastel, carne moída, cebola e azeitonas."),
+        Map.entry("Batata Frita","Batatas fritas e sal."),
+        Map.entry("Batata com Cheddar e Bacon","Batatas fritas, cheddar e bacon."),
+        Map.entry("Mandioca Frita","Mandioca frita e sal."),
+        Map.entry("Isca de Frango","Tiras de frango, farinha de trigo, alho e temperos."),
+        Map.entry("Calabresa Acebolada","Linguiça calabresa e cebola."),
+        Map.entry("Onion Rings","Anéis de cebola empanados em farinha de trigo."),
+        Map.entry("X-Burger","Pão, bife de hambúrguer, queijo, alface e tomate."),
+        Map.entry("X-Salada","Pão, bife de hambúrguer, queijo, alface, tomate e maionese."),
+        Map.entry("X-Bacon","Pão, bife de hambúrguer, queijo e bacon."),
+        Map.entry("X-Egg","Pão, bife de hambúrguer, queijo e ovo."),
+        Map.entry("X-Tudo","Pão, bife de hambúrguer, queijo, presunto, bacon, ovo, alface e tomate."),
+        Map.entry("Burger Vegetariano","Pão, hambúrguer de grão-de-bico, queijo, alface e tomate."),
+        Map.entry("Espaguete à Bolonhesa","Espaguete, carne moída, molho de tomate e parmesão."),
+        Map.entry("Fettuccine Alfredo","Fettuccine, manteiga, creme de leite e parmesão."),
+        Map.entry("Penne ao Sugo","Penne, molho de tomate, alho e manjericão."),
+        Map.entry("Lasanha à Bolonhesa","Massa de lasanha, carne moída, molho de tomate, presunto e muçarela."),
+        Map.entry("Nhoque ao Molho Branco","Nhoque de batata, leite, manteiga, farinha de trigo e parmesão."),
+        Map.entry("Margherita","Massa de pizza, molho de tomate, muçarela, tomate e manjericão."),
+        Map.entry("Calabresa","Massa de pizza, molho de tomate, muçarela, calabresa, cebola e azeitonas."),
+        Map.entry("Portuguesa","Massa de pizza, molho de tomate, muçarela, presunto, ovo, cebola e azeitonas."),
+        Map.entry("Quatro Queijos","Massa de pizza, molho de tomate, muçarela, provolone, parmesão e gorgonzola."),
+        Map.entry("Frango com Catupiry","Massa de pizza, molho de tomate, muçarela, frango desfiado e catupiry."),
+        Map.entry("Filé à Parmegiana","Filé bovino empanado, molho de tomate, muçarela, arroz e batatas fritas."),
+        Map.entry("Picanha na Chapa","Picanha, alho, arroz, farofa e vinagrete."),
+        Map.entry("Frango Grelhado","Filé de frango, alho, arroz e legumes."),
+        Map.entry("Salmão Grelhado","Salmão, limão, azeite, arroz e legumes."),
+        Map.entry("Feijoada Individual","Feijão preto, carne suína, linguiça, arroz, couve, farofa e laranja."),
+        Map.entry("Coca-Cola Lata","Refrigerante de cola gaseificado."),
+        Map.entry("Guaraná Lata","Refrigerante de guaraná gaseificado."),
+        Map.entry("Água Mineral","Água mineral natural."),
+        Map.entry("Suco de Laranja","Laranja espremida."),
+        Map.entry("Cerveja Long Neck","Água, malte de cevada, lúpulo e levedura."),
+        Map.entry("Caipirinha","Cachaça, limão, açúcar e gelo."),
+        Map.entry("Pudim","Leite condensado, leite, ovos e calda de caramelo."),
+        Map.entry("Petit Gâteau","Chocolate, manteiga, ovos, açúcar, farinha de trigo e sorvete de creme."),
+        Map.entry("Brownie com Sorvete","Chocolate, manteiga, ovos, açúcar, farinha de trigo e sorvete de creme."),
+        Map.entry("Mousse de Maracujá","Maracujá, leite condensado e creme de leite."),
+        Map.entry("Torta de Limão","Biscoito, manteiga, leite condensado, creme de leite e limão.")
+    );
     private static final String ADICIONAIS="""
         Cheddar|4.00|HAMBURGUERES,PORCOES
         Bacon extra|6.00|HAMBURGUERES,PORCOES,MASSAS,PIZZAS
@@ -70,6 +115,8 @@ public class ReferenciaSeeder implements ApplicationRunner {
                 String[] fields=entry.split(":");
                 var existente=db.optional("SELECT id,imagem_url,ativo FROM produto WHERE nome=?",fields[0]);
                 if(existente!=null) {
+                    db.jdbc().update("UPDATE produto SET descricao=? WHERE id=? AND (descricao IS NULL OR TRIM(descricao)='')",
+                        DESCRICOES.get(fields[0]),existente.get("id"));
                     String ativo=String.valueOf(existente.get("ativo"));
                     String url=db.str(existente,"imagem_url");
                     if(!ativo.equals("0") && !ativo.equalsIgnoreCase("false") &&
@@ -80,7 +127,7 @@ public class ReferenciaSeeder implements ApplicationRunner {
                 }
                 int tempo=switch(cat) { case BEBIDAS -> 3; case PIZZAS,PRATOS_PRINCIPAIS -> 25;
                     case HAMBURGUERES,MASSAS -> 20; default -> 15; };
-                var criado=cardapio.criarProduto(new CardapioService.ProdutoInput(fields[0],null,cat,new BigDecimal(fields[1]),null,
+                var criado=cardapio.criarProduto(new CardapioService.ProdutoInput(fields[0],DESCRICOES.get(fields[0]),cat,new BigDecimal(fields[1]),null,
                     cat==Categoria.BEBIDAS ? "BAR" : "COZINHA",tempo,true,true));
                 db.jdbc().update("UPDATE produto SET imagem_url=? WHERE id=?",
                     imagens.criar(UUID.fromString(criado.id()),cat),criado.id());
