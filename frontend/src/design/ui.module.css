@@ -5,25 +5,30 @@
   gap: 9px;
   min-height: 44px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   padding: 10px 20px;
   background: var(--verde);
-  color: var(--porcelana);
+  color: var(--on-accent);
   font-weight: 600;
   transition:
-    background 0.12s,
-    transform 0.12s;
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
   white-space: normal;
+  letter-spacing: 0.015em;
 }
 .button:hover:not(:disabled) {
   background: var(--verde-2);
+  box-shadow: 0 4px 16px #0000001a;
 }
 .button:active:not(:disabled) {
   transform: translateY(1px);
 }
 .secondary {
   background: transparent;
-  border-color: var(--verde);
+  border-color: #ad884866;
   color: var(--verde);
 }
 .secondary:hover:not(:disabled) {
@@ -46,10 +51,10 @@
 }
 .dangerPrimary {
   background: var(--erro);
-  color: var(--porcelana);
+  color: var(--on-danger);
 }
 .dangerPrimary:hover:not(:disabled) {
-  background: #7e2c21;
+  background: #ffc2b5;
 }
 .sm {
   min-height: 36px;
@@ -82,13 +87,24 @@
 }
 .control {
   width: 100%;
-  background: var(--porcelana);
-  border: 1px solid var(--fio-forte);
-  border-radius: 8px;
+  background: var(--ink-deep);
+  border: 1px solid var(--fio);
+  border-radius: var(--r-ctl);
   min-height: 48px;
   padding: 10px 12px;
   color: var(--carvao);
   font-weight: 400;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+.control:hover {
+  border-color: var(--latao);
+}
+.control:focus {
+  border-color: var(--verde);
+  box-shadow: 0 0 0 3px #d5b57712;
 }
 .control[aria-invalid="true"] {
   border-color: var(--erro);
@@ -108,7 +124,7 @@ textarea.control {
   gap: 6px;
   border: 1px solid var(--fio);
   padding: 3px 9px;
-  border-radius: 6px;
+  border-radius: var(--r-tag);
   color: var(--verde);
   background: var(--verde-t);
   font-size: 13px;
@@ -133,7 +149,7 @@ textarea.control {
   gap: 10px;
   align-items: flex-start;
   padding: 14px 16px;
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   font-size: 14px;
   color: var(--info);
   background: var(--info-bg);
@@ -152,29 +168,38 @@ textarea.control {
 .seg {
   display: flex;
   flex-wrap: wrap;
-  border: 1px solid var(--fio-forte);
-  border-radius: 8px;
-  padding: 3px;
-  gap: 3px;
-  background: var(--porcelana);
+  border: 1px solid var(--fio);
+  border-radius: var(--r-ctl);
+  padding: 4px;
+  gap: 4px;
+  background: var(--marfim-2);
 }
 .seg button {
   background: none;
   border: 0;
-  border-radius: 5px;
+  border-radius: 7px;
   padding: 8px 16px;
   min-height: 40px;
   color: var(--mudo);
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+.seg button:hover:not([aria-pressed="true"]) {
+  background: #d5b5770a;
+  color: var(--carvao);
 }
 .seg button[aria-pressed="true"] {
   background: var(--verde);
-  color: var(--porcelana);
+  color: var(--on-accent);
+  box-shadow: 0 2px 8px #00000020;
 }
 .stepper {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--fio-forte);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   background: var(--porcelana);
 }
 .stepper button {
@@ -184,6 +209,11 @@ textarea.control {
   background: transparent;
   color: var(--verde);
   font-size: 24px;
+  border-radius: calc(var(--r-ctl) - 1px);
+  transition: background var(--dur-2) var(--ease);
+}
+.stepper button:hover:not(:disabled) {
+  background: var(--verde-t);
 }
 .stepper output {
   min-width: 36px;
@@ -192,7 +222,8 @@ textarea.control {
 .backdrop {
   position: fixed;
   inset: 0;
-  background: #18241ed0;
+  background: #101416d9;
+  backdrop-filter: blur(6px);
   z-index: 50;
   display: flex;
   align-items: center;
@@ -202,13 +233,15 @@ textarea.control {
 }
 .modal {
   background: var(--porcelana);
-  border-radius: 10px;
+  border-radius: var(--r-surf);
   padding: 28px;
   max-width: 560px;
   width: 100%;
   max-height: 90dvh;
   overflow: auto;
-  box-shadow: 0 16px 60px #0003;
+  border: 1px solid var(--fio-forte);
+  border-top-color: var(--latao);
+  box-shadow: 0 24px 80px #0006;
   animation: dialogIn var(--dur-2) var(--ease);
 }
 .modal header {
@@ -221,7 +254,7 @@ textarea.control {
 .drawer {
   height: 100dvh;
   max-height: 100dvh;
-  border-radius: 10px 0 0 10px;
+  border-radius: var(--r-surf) 0 0 var(--r-surf);
   max-width: 560px;
   animation: drawerIn var(--dur-3) var(--ease);
 }
@@ -261,9 +294,9 @@ textarea.control {
   background: var(--porcelana);
   border: 1px solid var(--fio);
   border-left: 4px solid var(--sucesso);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   padding: 14px 16px;
-  box-shadow: 0 6px 20px #0002;
+  box-shadow: 0 10px 40px #0005;
   animation: rise 0.2s;
 }
 .toastError {
@@ -273,6 +306,7 @@ textarea.control {
   background: none;
   border: 0;
   font-size: 20px;
+  color: var(--carvao);
   min-width: 32px;
   min-height: 36px;
 }
@@ -289,13 +323,14 @@ textarea.control {
 .skeleton {
   height: 100px;
   background: var(--marfim-2);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   animation: enter 0.5s alternate infinite;
 }
 .photo {
-  background: var(--tom, #e7dfcf);
+  background: radial-gradient(ellipse at center, #45463a, #242b2b 80%);
+  border: 1px solid var(--fio);
   min-height: 96px;
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -329,16 +364,16 @@ textarea.control {
   padding: 3px;
 }
 .switch button[aria-checked="true"] {
-  background: var(--verde);
+  background: var(--latao);
 }
 .switch button:after {
   content: "";
   display: block;
   width: 20px;
   height: 20px;
-  background: var(--porcelana);
+  background: var(--carvao);
   border-radius: 50%;
-  transition: transform 0.12s;
+  transition: transform var(--dur-2) var(--ease);
 }
 .switch button[aria-checked="true"]:after {
   transform: translateX(18px);

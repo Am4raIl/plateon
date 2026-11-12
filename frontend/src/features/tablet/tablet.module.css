@@ -2,9 +2,11 @@
   display: grid;
   grid-template-columns: 288px minmax(0, 1fr);
   padding-bottom: 120px;
+  max-width: 1600px;
+  margin: auto;
 }
 .categories {
-  padding: 36px 32px 0 40px;
+  padding: 36px 24px 32px 32px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -26,11 +28,15 @@
   text-align: left;
   gap: 14px;
   padding: 12px 10px;
-  border: 0;
   background: transparent;
   color: var(--mudo);
   min-height: 48px;
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: var(--r-ctl);
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
 }
 .categories button span {
   color: var(--latao-txt);
@@ -38,16 +44,26 @@
 }
 .categories button[aria-pressed="true"] {
   color: var(--verde);
-  font-weight: 600;
   background: var(--verde-t);
+  box-shadow: inset 2px 0 var(--latao);
 }
-.categories button[aria-pressed="true"]:after {
+.categories button:hover {
+  color: var(--verde);
+  background: #d5b57708;
+}
+.categories button:after {
   content: "";
   width: 6px;
   height: 6px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--latao);
   margin-left: auto;
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease);
+}
+.categories button[aria-pressed="true"]:after {
+  opacity: 1;
 }
 .menuContent {
   padding: 36px 56px 0 24px;
@@ -58,10 +74,22 @@
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+  padding: 24px 28px;
+  min-height: 150px;
+  border: 1px solid var(--fio);
+  border-top-color: var(--latao);
+  border-radius: var(--r-surf);
+  background:
+    linear-gradient(90deg, #23282afa 30%, #23282aa8),
+    url("/art-deco.svg") center / 144px;
+}
+.menuHead :global(.section-label):after {
+  max-width: 64px;
 }
 .menuHead h1 {
-  font-size: 44px;
+  font-size: 52px;
+  font-weight: 400;
 }
 .menuHead label {
   max-width: 260px;
@@ -71,13 +99,14 @@
   grid-template-columns: minmax(250px, 380px) minmax(240px, 1fr);
   gap: 32px;
   align-items: center;
-  padding-bottom: 32px;
+  padding: 0 0 32px;
 }
 .heroPhoto {
-  height: 268px;
+  height: 300px;
 }
 .hero h2 {
   font-size: 38px;
+  font-weight: 400;
   margin-bottom: 16px;
 }
 .hero p {
@@ -86,8 +115,7 @@
 .hero strong {
   display: block;
   color: var(--verde);
-  font-size: 24px;
-  font-weight: 600;
+  font: 400 28px/1.2 var(--font-display);
   margin-bottom: 24px;
 }
 .productRow {
@@ -97,6 +125,11 @@
   align-items: center;
   padding: 24px 0;
   border-top: 1px solid var(--fio);
+  border-radius: var(--r-ctl);
+  transition: background var(--dur-2) var(--ease);
+}
+.productRow:hover {
+  background: #d5b57704;
 }
 .productRowPhoto {
   height: 96px;
@@ -106,7 +139,8 @@
   margin-bottom: 6px;
 }
 .productRow strong {
-  font-size: 20px;
+  font: 400 24px/1.2 var(--font-display);
+  color: var(--verde);
   display: block;
   margin-bottom: 10px;
 }
@@ -127,8 +161,9 @@
   background: var(--porcelana);
   padding: 16px 20px;
   border: 1px solid var(--fio);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px #2528231c;
+  border-radius: var(--r-surf);
+  border-top-color: var(--latao);
+  box-shadow: 0 12px 40px #0005;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,15 +236,19 @@
   color: var(--mudo);
 }
 .welcome {
-  padding: 70px 32px;
-  min-height: calc(100dvh - 72px);
+  padding: 100px 32px;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: calc(100dvh - 88px);
   display: grid;
   place-content: center;
   text-align: center;
   gap: 24px;
 }
 .welcome h1 {
-  font-size: 72px;
+  font-size: clamp(64px, 8vw, 104px);
+  font-weight: 400;
 }
 .welcome p {
   max-width: 500px;
@@ -225,10 +264,39 @@
   justify-content: center;
 }
 .pairing {
-  border-top: 3px solid var(--latao);
   padding: 32px 40px;
   text-align: center;
   max-width: 560px;
+  width: 100%;
+  border: 1px solid var(--fio);
+  border-top-color: var(--latao);
+  border-radius: var(--r-surf);
+  background: var(--porcelana);
+  box-shadow: 0 24px 80px #0002;
+  position: relative;
+}
+.welcome::before {
+  content: "";
+  position: absolute;
+  inset: 24px 5% auto;
+  height: 192px;
+  background:
+    linear-gradient(180deg, transparent, var(--marfim)), url("/art-deco.svg");
+  z-index: -1;
+  opacity: 0.65;
+  pointer-events: none;
+}
+.welcome::after {
+  content: "";
+  position: absolute;
+  bottom: -60px;
+  right: -32px;
+  width: 360px;
+  height: 480px;
+  background: url("/botanical.svg") center / contain no-repeat;
+  opacity: 0.6;
+  z-index: -1;
+  pointer-events: none;
 }
 .pairing :global(.brand) {
   justify-content: center;
@@ -329,8 +397,11 @@
   .menuContent {
     padding: 24px 16px 0;
   }
+  .menuHead {
+    padding: 22px 18px;
+  }
   .menuHead h1 {
-    font-size: 36px;
+    font-size: 40px;
   }
   .heroPhoto {
     height: 220px;
@@ -383,7 +454,7 @@
     padding: 48px 20px;
   }
   .welcome h1 {
-    font-size: 54px;
+    font-size: 64px;
   }
   .code {
     font-size: 48px;

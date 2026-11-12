@@ -1,11 +1,11 @@
 .staff {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100dvh;
 }
 .side {
-  background: var(--verde);
-  color: var(--porcelana);
+  background: var(--ink-deep);
+  color: var(--carvao);
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
@@ -14,9 +14,14 @@
   top: 0;
   height: 100dvh;
   overflow: hidden;
+  border-right: 1px solid var(--fio);
 }
 .side :global(.brand) {
-  color: var(--porcelana);
+  color: var(--carvao);
+  padding: 10px 0 28px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--fio);
+  font-size: 21px;
 }
 .side nav {
   display: grid;
@@ -28,47 +33,60 @@
   scrollbar-width: thin;
 }
 .side small {
-  color: #c4d2cb;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 11px;
-  padding: 20px 12px 8px;
+  padding: 16px 12px 8px;
+  color: var(--latao-txt);
 }
 .side a {
-  color: #e6ece7;
+  color: var(--mudo);
   text-decoration: none;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: var(--r-ctl);
   min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid transparent;
+  transition:
+    color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+.side a:hover {
+  color: var(--carvao);
+  background: #ffffff05;
 }
 .side a[aria-current] {
-  background: var(--verde-2);
-  color: var(--porcelana);
+  background: var(--verde-t);
+  color: var(--verde);
+  box-shadow: inset 2px 0 var(--latao);
 }
 .side footer {
   flex-shrink: 0;
-  border-top: 1px solid #ffffff30;
+  border-top: 1px solid var(--fio);
   padding-top: 20px;
   display: grid;
   gap: 8px;
 }
 .side footer button {
-  color: var(--porcelana);
+  color: var(--carvao);
   justify-content: start;
   padding-left: 0;
 }
 .side footer p {
-  color: #c4d2cb;
+  color: var(--mudo);
   font-size: 14px;
 }
 .top {
-  height: 72px;
+  min-height: 88px;
   display: flex;
   align-items: center;
   padding: 0 40px;
   gap: 28px;
   border-bottom: 1px solid var(--fio);
-  background: var(--porcelana);
+  background: var(--ink-deep);
 }
 .top nav {
   display: flex;
@@ -83,9 +101,13 @@
   align-items: center;
   gap: 8px;
   border-bottom: 2px solid transparent;
+  transition:
+    color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease);
 }
 .top a[aria-current] {
   border-color: var(--verde);
+  color: var(--carvao);
 }
 .tableName {
   border-left: 1px solid var(--fio);
@@ -104,30 +126,36 @@
 .login {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.05fr 1fr;
 }
 .loginAside {
-  background: var(--verde);
-  color: var(--porcelana);
-  padding: 56px;
+  background: var(--ink-deep);
+  color: var(--carvao);
+  padding: clamp(32px, 5vw, 80px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-right: 1px solid var(--fio);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 .loginAside :global(.brand) {
-  color: var(--porcelana);
+  color: var(--carvao);
 }
 .loginAside h2 {
-  font-size: 44px;
-  max-width: 400px;
+  font-size: clamp(44px, 4.6vw, 72px);
+  line-height: 1.08;
+  max-width: 500px;
+  font-weight: 400;
 }
 .loginAside p {
-  color: #c4d2cb;
+  color: var(--mudo);
   margin-top: 24px;
   max-width: 340px;
 }
 .loginAside :global(.section-label) {
-  color: #e4d2b1;
+  color: var(--verde);
 }
 .loginMain {
   display: grid;
@@ -135,38 +163,133 @@
   padding: 40px;
 }
 .loginForm {
-  max-width: 360px;
+  max-width: 380px;
   width: 100%;
   display: grid;
   gap: 32px;
 }
 .loginForm h1 {
-  font-size: 38px;
+  font-size: 52px;
+  margin-bottom: 12px;
 }
 .home {
   min-height: 100dvh;
   display: grid;
-  place-content: center;
-  padding: 32px;
-  gap: 36px;
-  max-width: 700px;
+  align-content: center;
+  padding: 72px clamp(24px, 8vw, 128px);
+  gap: 44px;
+  max-width: 1280px;
   margin: auto;
+  position: relative;
+  isolation: isolate;
 }
 .home h1 {
-  font-size: 44px;
+  font-size: clamp(52px, 6vw, 88px);
+  line-height: 1.05;
 }
 .home a {
+  position: relative;
   display: block;
-  background: var(--porcelana);
-  padding: 24px;
+  background: #252a2ced;
+  padding: 28px;
   border: 1px solid var(--fio);
-  border-radius: 10px;
+  border-top-color: var(--latao);
+  border-radius: var(--r-surf);
   text-decoration: none;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
+}
+.home a:hover {
+  border-color: var(--verde);
+  background: var(--verde-t);
+  box-shadow: var(--shadow-raised);
+  transform: translateY(-3px);
+}
+.home a h2 {
+  color: var(--carvao);
+  margin-bottom: 12px;
 }
 .home a span {
   display: block;
   color: var(--mudo);
   margin-top: 4px;
+}
+.home::before,
+.loginAside::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent, var(--ink-deep) 88%),
+    url("/art-deco.svg") top center / 192px;
+  opacity: 0.45;
+}
+.home::before {
+  inset: 0 32px auto;
+  height: 230px;
+  border: 1px solid var(--latao);
+  border-top: 0;
+  background:
+    linear-gradient(180deg, transparent, var(--marfim)), url("/art-deco.svg");
+}
+.home::after,
+.loginAside::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: min(75%, 480px);
+  height: 75%;
+  z-index: -1;
+  pointer-events: none;
+  background: url("/botanical.svg") bottom right / contain no-repeat;
+  opacity: 0.7;
+}
+.loginAside > div {
+  padding-block: 64px;
+}
+.loginAside > small {
+  color: var(--mudo);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.loginMain {
+  background: radial-gradient(ellipse at top right, #ad88480b, transparent 65%);
+}
+.loginForm > a {
+  color: var(--mudo);
+  font-size: 14px;
+  justify-self: start;
+}
+.loginForm > a:hover {
+  color: var(--verde);
+}
+.navIcon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.85;
+}
+@media (max-width: 1000px) {
+  .top {
+    flex-wrap: wrap;
+    padding: 16px 24px;
+    gap: 12px;
+  }
+  .top nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    margin: 0;
+  }
+  .top > button {
+    margin-left: auto;
+  }
 }
 @media (max-width: 900px) {
   .staff {
@@ -199,38 +322,43 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    background: var(--verde);
-    color: var(--porcelana);
+    background: var(--ink-deep);
+    color: var(--carvao);
     padding: 14px 16px;
   }
   .staffHeader :global(.brand) {
-    color: var(--porcelana);
+    color: var(--carvao);
     font-size: 22px;
   }
   .staffHeader p {
-    color: #c4d2cb;
+    color: var(--mudo);
     font-size: 13px;
   }
   .staffHeader button {
-    color: var(--porcelana);
+    color: var(--carvao);
   }
   .mobileManagement {
     display: flex;
     gap: 8px;
     overflow-x: auto;
     padding: 8px 16px;
-    background: var(--verde-2);
+    background: var(--marfim-2);
+    border-bottom: 1px solid var(--fio);
   }
   .mobileManagement a {
     flex: none;
-    color: var(--porcelana);
+    color: var(--carvao);
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: var(--r-ctl);
     padding: 9px 12px;
     min-height: 44px;
+    transition:
+      background var(--dur-2) var(--ease),
+      color var(--dur-2) var(--ease);
   }
   .mobileManagement a[aria-current] {
-    background: var(--verde);
+    background: var(--verde-t);
+    color: var(--verde);
   }
   .bottom {
     display: flex;
@@ -264,6 +392,9 @@
   .loginAside {
     padding: 28px;
     gap: 40px;
+  }
+  .loginAside > div {
+    padding-block: 16px;
   }
   .loginAside h2 {
     font-size: 30px;
@@ -300,6 +431,10 @@
     font-size: 14px;
   }
   .home h1 {
-    font-size: 36px;
+    font-size: 48px;
+  }
+  .home {
+    gap: 32px;
+    padding-block: 80px 40px;
   }
 }

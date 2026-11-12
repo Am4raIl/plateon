@@ -370,16 +370,22 @@ export function Production() {
         dropPosition.current?.id === id
           ? dropPosition.current.rect
           : (movePositions.current?.get(id) ?? movingFrom ?? previous?.rect);
-      if (from && node.animate && !reducedMotion) {
+      // Hidden mobile columns have no layout box. Never animate a card from
+      // (0, 0) when it is later revealed by the column selector.
+      if (from && target.width && node.animate && !reducedMotion) {
         const x = from.left - target.left;
         const y = from.top - target.top;
-        if (Math.abs(x) > 1 || Math.abs(y) > 1) {
+        if ((Math.abs(x) > 1 || Math.abs(y) > 1) && previous?.rect.width) {
+          const duration = Math.min(560, 340 + Math.hypot(x, y) * 0.22);
           const animation = node.animate(
             [
-              { transform: `translate(${x}px,${y}px)` },
-              { transform: "translate(0,0)" },
+              {
+                transform: `translate(${x}px,${y}px)`,
+                zIndex: 2,
+              },
+              { transform: "translate(0,0)", zIndex: 2 },
             ],
-            { duration: 380, easing: "cubic-bezier(.22,1,.36,1)" },
+            { duration, easing: "cubic-bezier(.22,1,.36,1)" },
           );
           layoutAnimations.current.set(id, animation);
           animation.onfinish = () => {
@@ -389,16 +395,20 @@ export function Production() {
         }
         if (previous && version > previous.version)
           node.animate(
-            [{ backgroundColor: "#E1EAE5" }, { backgroundColor: "#FFFCF7" }],
+            [
+              { backgroundColor: "var(--verde-t)" },
+              { backgroundColor: "var(--porcelana)" },
+            ],
             { duration: 1200 },
           );
-      } else if (!previous && !reducedMotion && node.animate) {
-        node.animate([{ opacity: 0 }, { opacity: 1 }], {
-          delay: 140,
-          duration: 280,
-          easing: "ease-out",
-          fill: "backwards",
-        });
+      } else if (!previous && target.width && !reducedMotion && node.animate) {
+        node.animate(
+          [
+            { opacity: 0, transform: "translateY(10px)" },
+            { opacity: 1, transform: "translateY(0)" },
+          ],
+          { duration: 360, easing: "cubic-bezier(.22,1,.36,1)" },
+        );
       }
       next.set(id, { rect: target, version });
     });
@@ -680,8 +690,8 @@ export function Production() {
             const elapsed = Math.max(16, now - lastDrag.current.time);
             const velocity = (e.delta.x - lastDrag.current.x) / elapsed;
             const angle = Math.max(
-              -5,
-              Math.min(5, velocity * 2 + e.delta.x * 0.01),
+              -2.5,
+              Math.min(2.5, velocity * 1.2 + e.delta.x * 0.003),
             );
             if (motionFrame.current !== null)
               cancelAnimationFrame(motionFrame.current);

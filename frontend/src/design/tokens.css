@@ -1,33 +1,41 @@
+/* The original token names are retained so every existing screen shares the theme. */
 :root {
-  --marfim: #f5f1e8;
-  --marfim-2: #ece6d7;
-  --porcelana: #fffcf7;
-  --verde: #183c34;
-  --verde-2: #2a5448;
-  --verde-t: #e1eae5;
-  --carvao: #252823;
-  --mudo: #5a5d55;
-  --latao: #a88954;
-  --latao-txt: #7a5f2e;
-  --fio: #ddd6c5;
-  --fio-forte: #bdb4a0;
-  --erro: #a23b2c;
-  --erro-bg: #f8e5e0;
-  --atencao: #7a4f00;
-  --atencao-bg: #f8ebc9;
-  --info: #2c5b7a;
-  --info-bg: #e1ecf3;
-  --sucesso: #2b6a3f;
-  --sucesso-bg: #e2efe0;
+  color-scheme: dark;
+  --marfim: #252a2c;
+  --marfim-2: #202527;
+  --porcelana: #2c3234;
+  --verde: #d5b577;
+  --verde-2: #e5c992;
+  --verde-t: #38382f;
+  --carvao: #eee9de;
+  --mudo: #b9b9af;
+  --latao: #ad8848;
+  --latao-txt: #d5b577;
+  --fio: #3d4341;
+  --fio-forte: #727467;
+  --erro: #f3a899;
+  --erro-bg: #472e2c;
+  --atencao: #e4c68b;
+  --atencao-bg: #413a29;
+  --info: #abc9dc;
+  --info-bg: #2c3a42;
+  --sucesso: #b1d0b0;
+  --sucesso-bg: #2e3d33;
+  --on-accent: #202526;
+  --on-danger: #30201e;
+  --ink-deep: #1d2224;
   --r-tag: 6px;
-  --r-ctl: 8px;
-  --r-surf: 10px;
-  --dur-1: 120ms;
-  --dur-2: 200ms;
-  --dur-3: 240ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --font-display: "Fraunces", Georgia, serif;
-  --font-ui: "Source Sans 3", system-ui, sans-serif;
+  --r-ctl: 10px;
+  --r-surf: 16px;
+  --dur-1: 180ms;
+  --dur-2: 260ms;
+  --dur-3: 420ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-soft: 0 4px 20px #00000012;
+  --shadow-raised: 0 12px 32px #00000026;
+  --font-display:
+    "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --font-ui: "Avenir Next", "Segoe UI", system-ui, sans-serif;
 }
 * {
   box-sizing: border-box;
@@ -42,7 +50,8 @@ body {
   margin: 0;
   background: var(--marfim);
   color: var(--carvao);
-  font: 16px/1.5 var(--font-ui);
+  font: 15px/1.6 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
 }
 button,
@@ -87,11 +96,11 @@ p {
   margin: 0;
 }
 h1 {
-  font: 450 34px/1.18 var(--font-display);
+  font: 400 clamp(32px, 3.1vw, 46px)/1.15 var(--font-display);
   letter-spacing: -0.02em;
 }
 h2 {
-  font: 450 24px/1.25 var(--font-display);
+  font: 400 27px/1.25 var(--font-display);
 }
 h3 {
   font-size: 18px;
@@ -114,7 +123,7 @@ main {
 }
 fieldset {
   border: 1px solid var(--fio);
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   margin: 0;
   padding: 16px;
 }
@@ -205,7 +214,7 @@ form {
   color: var(--erro);
 }
 .big-price {
-  font-size: 44px;
+  font: 400 44px/1.2 var(--font-display);
   color: var(--verde);
   font-weight: 600;
   line-height: 1.2;
@@ -226,23 +235,46 @@ form {
   height: 1px;
   flex: 1;
   background: var(--latao);
+  opacity: 0.5;
 }
 .surface {
   background: var(--porcelana);
   border: 1px solid var(--fio);
   border-radius: var(--r-surf);
   padding: 24px;
+  box-shadow: var(--shadow-soft);
 }
 .page {
   padding: 32px 40px 48px;
-  animation: enter 0.12s ease-out;
+  max-width: 1800px;
+  margin-inline: auto;
+  animation: enter var(--dur-2) var(--ease);
 }
 .page-head {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  min-height: 146px;
+  padding: 26px 28px;
+  border: 1px solid var(--fio);
+  border-top-color: var(--latao);
+  border-radius: var(--r-surf);
+  background:
+    radial-gradient(circle at 94% 22%, #ad88481a 0 11px, transparent 12px),
+    linear-gradient(90deg, #23282a 35%, #23282af2 60%, #23282a66),
+    url("/art-deco.svg") right center / auto,
+    var(--ink-deep);
+}
+.page-head > div:first-child {
+  min-width: 0;
+}
+.page-head h1 {
+  text-wrap: balance;
+}
+.page-head .section-label:after {
+  max-width: 72px;
 }
 .split {
   display: grid;
@@ -325,13 +357,16 @@ form {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  color: var(--verde);
-  font: 450 27px var(--font-display);
+  color: var(--carvao);
+  font: 400 22px var(--font-ui);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
   text-decoration: none;
 }
 .brand svg {
   width: 32px;
   height: 32px;
+  color: var(--verde);
 }
 .badge-line {
   display: flex;
@@ -369,12 +404,15 @@ form {
   gap: 20px;
 }
 .stat {
-  border-top: 2px solid var(--latao);
-  padding: 22px 0;
+  border: 1px solid var(--fio);
+  border-top-color: var(--latao);
+  background: var(--porcelana);
+  padding: 22px;
+  border-radius: var(--r-surf);
 }
 .stat strong {
   display: block;
-  font: 450 32px var(--font-display);
+  font: 400 32px var(--font-display);
   color: var(--verde);
   margin-top: 12px;
 }
@@ -421,7 +459,7 @@ form {
   overflow-wrap: anywhere;
   background: var(--atencao-bg);
   color: var(--atencao);
-  border-radius: 6px;
+  border-radius: var(--r-tag);
 }
 .money {
   text-align: right;
@@ -498,7 +536,8 @@ form {
     align-items: flex-start;
     flex-direction: column;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 8px;
+    padding: 22px 18px;
   }
   .surface {
     padding: 18px;
@@ -509,8 +548,11 @@ form {
   .stats {
     gap: 12px;
   }
+  .stat {
+    padding: 16px 12px;
+  }
   .stat strong {
-    font-size: 26px;
+    font-size: 25px;
   }
   .spread {
     align-items: flex-start;
@@ -532,13 +574,49 @@ form {
 }
 @media (prefers-contrast: more) {
   :root {
-    --fio: #797567;
-    --fio-forte: #5a5d55;
+    --fio: #a19b86;
+    --fio-forte: #c5b999;
+    --mudo: #ddd8cc;
   }
   button,
   input,
   select,
   textarea {
     border-width: 2px !important;
+  }
+}
+
+::selection {
+  color: var(--on-accent);
+  background: var(--verde);
+}
+input::placeholder,
+textarea::placeholder {
+  color: #a3a59e;
+  opacity: 1;
+}
+tbody tr {
+  transition: background var(--dur-1);
+}
+tbody tr:hover {
+  background: #d5b57706;
+}
+.surface > .table-wrap {
+  border-top: 1px solid var(--fio);
+}
+.stat > span {
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.bar-track {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.blank {
+  min-height: 100dvh;
+}
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
   }
 }

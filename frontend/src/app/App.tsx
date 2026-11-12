@@ -162,6 +162,35 @@ function Guard({
     );
   return children ?? <Outlet />;
 }
+function NavIcon({ to }: { to: string }) {
+  const icon = to.split("/").at(-1);
+  const paths: Record<string, string> = {
+    pedidos: "M4 5h16v15H4zM8 3v4m8-4v4M8 11h8m-8 4h5",
+    comandas: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6m-6 4h6",
+    tablets: "M5 3h14v18H5zM10 18h4",
+    dashboard: "M4 4h6v7H4zM14 4h6v4h-6zM4 15h6v5H4zM14 12h6v8h-6z",
+    produtos: "M3 12h18M5 12a7 7 0 0 1 14 0M12 3v2M5 16h14m-12 4h10",
+    "adicionais-mesas": "M3 8h18v5H3zM6 13v7m12-7v7M6 4h12",
+    usuarios:
+      "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8m8-7a4 4 0 0 1 0 7m5 10v-2a4 4 0 0 0-3-4",
+    couvert: "M12 3v18M16 7h-6a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H7",
+    dispositivos: "M3 4h18v13H3zM8 21h8m-4-4v4",
+  };
+  return (
+    <svg
+      className={s.navIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={paths[icon ?? ""] ?? paths.pedidos} />
+    </svg>
+  );
+}
 function StaffLayout() {
   const session = useSession((s) => s.staff)!;
   const logout = () => {
@@ -200,6 +229,7 @@ function StaffLayout() {
           <small>Operação</small>
           {operation.map((l) => (
             <NavLink key={l.to} to={l.to}>
+              <NavIcon to={l.to} />
               {l.name}
             </NavLink>
           ))}
@@ -208,6 +238,7 @@ function StaffLayout() {
               <small>Gerência</small>
               {management.map((l) => (
                 <NavLink key={l.to} to={l.to}>
+                  <NavIcon to={l.to} />
                   {l.name}
                 </NavLink>
               ))}

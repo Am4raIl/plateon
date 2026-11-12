@@ -24,7 +24,7 @@ export function Brand() {
           stroke="currentColor"
           strokeWidth="3.2"
         />
-        <circle cx="23" cy="26" r="2.4" fill="#A88954" />
+        <circle cx="23" cy="26" r="2.4" fill="var(--latao)" />
       </svg>
       Plateon
     </span>
@@ -495,14 +495,14 @@ export function Photo({
         <img src={imageUrl(url)} alt={name} onError={() => setFailed(true)} />
       ) : (
         <svg viewBox="0 0 240 160" role="img" aria-label={name}>
-          <ellipse cx="120" cy="87" rx="86" ry="53" fill="#fffcf7" />
+          <ellipse cx="120" cy="87" rx="86" ry="53" fill="#ddd6c5" />
           <ellipse
             cx="120"
             cy="86"
             rx="66"
             ry="39"
             fill="none"
-            stroke="#d8cfbd"
+            stroke="#aaa38f"
             strokeWidth="2"
           />
           <path

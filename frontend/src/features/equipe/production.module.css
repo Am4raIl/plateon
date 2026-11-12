@@ -14,59 +14,63 @@
 }
 .column {
   background: var(--marfim-2);
-  padding: 14px;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--fio);
+  border-radius: var(--r-surf);
   min-height: 480px;
   display: grid;
   gap: 14px;
   align-content: start;
   transition:
-    border-color 0.25s ease,
-    background-color 0.25s ease,
-    box-shadow 0.25s ease;
+    border-color var(--dur-2) var(--ease),
+    background-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
 }
 .columnHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 2px 2px 10px;
+  padding: 2px 2px 14px;
+  border-bottom: 1px solid var(--fio);
 }
 .columnHeader h2 {
-  font: 600 18px var(--font-ui);
+  font: 400 24px var(--font-display);
 }
 .over {
   border-color: var(--verde);
   box-shadow:
-    inset 0 0 0 1px var(--verde),
-    0 8px 28px #163b3020;
+    inset 0 0 0 1px #d5b57730,
+    0 8px 28px #00000020;
 }
 .allowed {
-  background: var(--verde-t);
-  border-color: #244e3f70;
+  background: #292d2a;
+  border-color: #ad884866;
 }
 .card {
   background: var(--porcelana);
   border: 1px solid var(--fio);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: var(--r-surf);
+  padding: 18px;
   display: grid;
   gap: 16px;
   position: relative;
   transition:
-    opacity 0.2s ease,
-    background-color 0.25s ease,
-    border-color 0.25s ease,
-    box-shadow 0.25s ease;
-  box-shadow: 0 2px 8px #1f302908;
+    opacity var(--dur-2) var(--ease),
+    background-color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+  box-shadow: var(--shadow-soft);
 }
 .card:hover {
-  box-shadow: 0 8px 24px #1f302916;
+  border-color: #ad884866;
+  box-shadow: var(--shadow-raised);
 }
 .card :global(.tableNumber) {
   font-size: 30px;
   line-height: 1.1;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--verde);
 }
 .card ul {
   margin: 0;
@@ -105,7 +109,7 @@
   font-size: 22px;
   padding: 4px 10px;
   min-width: 44px;
-  border-radius: 8px;
+  border-radius: var(--r-ctl);
   transition:
     background-color 0.2s,
     color 0.2s;
@@ -119,7 +123,10 @@
   cursor: grabbing;
 }
 .late {
-  border: 2px solid var(--erro);
+  border-color: #f3a89966;
+  box-shadow:
+    inset 2px 0 #f3a89999,
+    var(--shadow-soft);
 }
 .lateLabel {
   font-size: 13px;
@@ -128,8 +135,8 @@
 }
 .dragging {
   background: var(--verde-t);
-  border: 2px dashed #244e3f88;
-  box-shadow: inset 0 0 0 1px #244e3f12;
+  border: 1px dashed var(--latao);
+  box-shadow: inset 0 0 0 1px #d5b57712;
 }
 .dragging > * {
   visibility: hidden;
@@ -145,21 +152,21 @@
   font-weight: 600;
 }
 .overlay {
-  box-shadow: 0 22px 48px #162f2940;
+  box-shadow: 0 22px 48px #0008;
   opacity: 1;
   width: 100%;
   transform: rotate(var(--tilt, 0deg));
   transform-origin: 50% 80%;
-  transition: transform 120ms ease-out;
+  transition: transform var(--dur-1) var(--ease);
   pointer-events: none;
 }
 .pending {
-  box-shadow: 0 10px 28px #163b3026;
+  box-shadow: 0 10px 28px #0003;
 }
 .delivery {
   margin-top: 20px;
   border: 2px dashed var(--verde);
-  border-radius: 10px;
+  border-radius: var(--r-surf);
   padding: 24px;
   text-align: center;
   color: var(--verde);
@@ -177,6 +184,15 @@
   display: grid;
   place-content: center;
   font-size: 22px;
+  border-radius: var(--r-ctl);
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.menu > summary:hover,
+.menu[open] > summary {
+  background: var(--verde-t);
+  color: var(--verde);
 }
 .menu > div {
   position: absolute;
@@ -187,8 +203,9 @@
   padding: 8px;
   background: var(--porcelana);
   border: 1px solid var(--fio);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px #0002;
+  border-radius: var(--r-ctl);
+  box-shadow: var(--shadow-raised);
+  animation: rise var(--dur-2) var(--ease);
   display: grid;
   gap: 4px;
 }
@@ -210,7 +227,7 @@
   padding: 20px;
   margin-bottom: 20px;
   border: 1px solid var(--fio);
-  border-radius: 10px;
+  border-radius: var(--r-surf);
   background: var(--marfim);
 }
 .callsPanel .calls {
@@ -224,12 +241,12 @@
   padding: 24px;
   background: var(--porcelana);
   border: 1px solid var(--fio);
-  border-radius: 10px;
+  border-radius: var(--r-surf);
   display: grid;
   gap: 20px;
 }
 .call h2 {
-  font: 600 34px var(--font-ui);
+  font: 400 36px var(--font-display);
 }
 .call small {
   display: block;

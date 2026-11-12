@@ -107,6 +107,49 @@ public class DemoSeeder implements ApplicationRunner {
                     db.id(),mesa,n<=2 ? "ABERTO" : "ATENDIDO",db.ts(clock.instant().minusSeconds(n*60L)),
                     n<=2 ? null : db.ts(clock.instant()),n<=2 ? null : garcom);
         }
+        garantirOperacaoAtiva();
+    }
+    private void garantirOperacaoAtiva() {
+        Long pedidosAtivos=db.jdbc().queryForObject("SELECT COUNT(*) FROM pedido WHERE status IN ('RECEBIDO','EM_PREPARO','PRONTO')",Long.class);
+        if(pedidosAtivos!=null && pedidosAtivos==0) {
+            var produtos=db.jdbc().queryForList("SELECT * FROM produto WHERE ativo=1 ORDER BY nome");
+            if(produtos.isEmpty()) return;
+            var mesas=db.jdbc().queryForList("""
+                SELECT m.id FROM mesa m WHERE m.ativa=1 AND NOT EXISTS (
+                    SELECT 1 FROM comanda c WHERE c.mesa_id=m.id AND c.status='AGUARDANDO_PAGAMENTO'
+                ) ORDER BY m.numero LIMIT 9
+                """);
+            Instant agora=clock.instant();
+            LocalDate dia=tempo.diaOperacional(agora);
+            db.jdbc().update("INSERT IGNORE INTO contador_diario(dia_operacional,ultimo_numero) VALUES(?,0)",dia);
+            for(int n=0;n<mesas.size();n++) {
+                String mesaId=db.str(mesas.get(n),"id");
+                var aberta=db.optional("SELECT id FROM comanda WHERE mesa_id=? AND status='ABERTA' ORDER BY aberta_em DESC LIMIT 1",mesaId);
+                String comandaId=aberta==null ? db.id() : db.str(aberta,"id");
+                if(aberta==null)
+                    db.jdbc().update("INSERT INTO comanda(id,mesa_id,status,aberta_em,taxa_servico_percentual,couvert) VALUES(?,?,'ABERTA',?,10,0)",
+                        comandaId,mesaId,db.ts(agora));
+                var produto=produtos.get(n%produtos.size());
+                String pedidoId=db.id();
+                int numero=((Number)db.one("SELECT ultimo_numero FROM contador_diario WHERE dia_operacional=? FOR UPDATE",dia).get("ultimo_numero")).intValue()+1;
+                db.jdbc().update("UPDATE contador_diario SET ultimo_numero=? WHERE dia_operacional=?",numero,dia);
+                Instant enviado=agora.minusSeconds((n%3==0 ? 3 : n%3==1 ? 8 : 15)*60L);
+                db.jdbc().update("INSERT INTO pedido(id,comanda_id,status,numero_diario,dia_operacional,observacao_geral,criado_em,atualizado_em,enviado_em) VALUES(?,?,'RECEBIDO',?,?,?,?,?,?)",
+                    pedidoId,comandaId,numero,dia,"Demo ativo "+agora,db.ts(enviado.minusSeconds(60)),db.ts(enviado),db.ts(enviado));
+                db.jdbc().update("INSERT INTO item_pedido(id,pedido_id,produto_id,quantidade,nome_produto,preco_unitario,estacao,categoria) VALUES(?,?,?,?,?,?,?,?)",
+                    db.id(),pedidoId,produto.get("id"),1,produto.get("nome"),produto.get("preco"),produto.get("estacao"),produto.get("categoria"));
+                historico(pedidoId,"RASCUNHO","RECEBIDO",enviado);
+                if(n>=3) { db.jdbc().update("UPDATE pedido SET status='EM_PREPARO' WHERE id=?",pedidoId); historico(pedidoId,"RECEBIDO","EM_PREPARO",enviado.plusSeconds(60)); }
+                if(n>=6) { db.jdbc().update("UPDATE pedido SET status='PRONTO' WHERE id=?",pedidoId); historico(pedidoId,"EM_PREPARO","PRONTO",enviado.plusSeconds(180)); }
+            }
+        }
+        Long chamadosAbertos=db.jdbc().queryForObject("SELECT COUNT(*) FROM chamado_garcom WHERE status='ABERTO'",Long.class);
+        if(chamadosAbertos!=null && chamadosAbertos==0) {
+            var mesas=db.jdbc().queryForList("SELECT id FROM mesa WHERE ativa=1 ORDER BY numero LIMIT 2");
+            for(var mesa:mesas)
+                db.jdbc().update("INSERT INTO chamado_garcom(id,mesa_id,tipo,status,criado_em) VALUES(?,?,'AJUDA','ABERTO',?)",
+                    db.id(),mesa.get("id"),db.ts(clock.instant()));
+        }
     }
     private void historico(String pedido,String de,String para,Instant em) {
         db.jdbc().update("INSERT INTO pedido_status_historico(pedido_id,de,para,em) VALUES(?,?,?,?)",pedido,de,para,db.ts(em));
