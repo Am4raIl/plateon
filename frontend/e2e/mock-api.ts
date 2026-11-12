@@ -5,7 +5,7 @@ import { resetDatabase } from "../src/test/mocks/handlers";
 server.listen({ onUnhandledRequest: "bypass" });
 let failure: { path: string; status: number; times: number } | null = null;
 const httpServer = createServer(async (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3000");
+  res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:3001");
   res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
   res.setHeader(
     "Access-Control-Allow-Methods",

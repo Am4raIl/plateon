@@ -13,7 +13,9 @@ test("saída do gerente permanece visível em telas baixas", async ({ page }) =>
   await expect(
     management.getByRole("link", { name: "Mesas e adicionais" }),
   ).toBeVisible();
-  await expect(management.getByRole("link", { name: "Equipe" })).toBeVisible();
+  await expect(
+    management.getByRole("link", { name: "Equipe", exact: true }),
+  ).toBeVisible();
   await expect(management.getByRole("link", { name: "Couvert" })).toBeVisible();
 });
 test("cadastros de usuários, adicionais e mesas salvam e desativam", async ({

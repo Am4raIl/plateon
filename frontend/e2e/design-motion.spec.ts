@@ -120,7 +120,7 @@ test("transferência encaixa na ordem correta e anima os cards das duas colunas"
     fullPage: true,
   });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: "Em preparo", exact: true }).click();
+  await page.getByRole("button", { name: /^Em preparo \(\d+\)$/ }).click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

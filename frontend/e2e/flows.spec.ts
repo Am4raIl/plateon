@@ -699,7 +699,9 @@ test("Kanban por toque usa somente a alça", async ({ browser }) => {
     await expect(
       page.getByRole("button", { name: "Iniciar preparo" }),
     ).toBeEnabled();
-    const handle = page.getByRole("button", { name: /Arrastar pedido 14/ });
+    const handle = page.locator(
+      `article[data-pedido="${ids.order}"]:not([aria-hidden="true"]) button[aria-roledescription]`,
+    );
     const origin = await handle.boundingBox();
     const target = await page
       .locator('[data-drop-status="EM_PREPARO"]')

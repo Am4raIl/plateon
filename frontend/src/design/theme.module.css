@@ -49,3 +49,9 @@
 .compact span {
   display: none;
 }
+
+@media (pointer: coarse) {
+  .toggle button {
+    min-height: 44px;
+  }
+}

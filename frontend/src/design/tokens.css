@@ -356,7 +356,7 @@ form {
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 24px;
 }
 .table-wrap {
@@ -472,7 +472,7 @@ form {
 }
 .stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 .stat {
@@ -594,7 +594,7 @@ form {
     grid-template-columns: 1fr;
   }
   .stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 600px) {
@@ -690,5 +690,69 @@ tbody tr:hover {
 @media (forced-colors: active) {
   :focus-visible {
     outline: 2px solid Highlight;
+  }
+}
+
+/* Intrinsic widths must stay inside their grid or flex track. */
+.stack,
+.stack-sm,
+.surface,
+.grid > *,
+.split > *,
+.stats > *,
+form,
+fieldset {
+  min-width: 0;
+}
+.page-head,
+.spread,
+.pagination,
+.total-lines > div {
+  flex-wrap: wrap;
+}
+h1,
+h2,
+h3,
+.stat strong,
+.total-lines > div > span {
+  overflow-wrap: anywhere;
+}
+.table-wrap {
+  min-width: 0;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.pagination {
+  gap: 8px 16px;
+}
+@media (max-width: 900px) {
+  .page-head {
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: auto;
+    gap: 16px;
+  }
+  .page-head > .actions {
+    width: 100%;
+  }
+}
+@media (max-width: 400px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+  .surface {
+    padding: 14px;
+  }
+}
+@media (pointer: coarse) {
+  button,
+  summary,
+  .pagination a {
+    min-height: 44px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

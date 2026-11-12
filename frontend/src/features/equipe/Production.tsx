@@ -9,6 +9,9 @@ import {
   useSensors,
   useDraggable,
   useDroppable,
+  useDndContext,
+  closestCenter,
+  pointerWithin,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -94,7 +97,12 @@ function DropColumn({
   active: boolean;
   dragging: boolean;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+  const { setNodeRef, isOver } = useDroppable({ id, data: { allowed } });
+  const { measureDroppableContainers } = useDndContext();
+  useLayoutEffect(() => {
+    // Compact layouts reveal a drop destination only after a drag begins.
+    measureDroppableContainers([id]);
+  }, [id, allowed, active, measureDroppableContainers]);
   return (
     <section
       ref={setNodeRef}
@@ -108,7 +116,10 @@ function DropColumn({
   );
 }
 function Delivery() {
-  const { setNodeRef, isOver } = useDroppable({ id: "ENTREGUE" });
+  const { setNodeRef, isOver } = useDroppable({
+    id: "ENTREGUE",
+    data: { allowed: true },
+  });
   return (
     <div
       ref={setNodeRef}
@@ -647,7 +658,10 @@ export function Production() {
         <Seg
           label="Coluna do quadro"
           value={mobileColumn}
-          options={columns.map((c) => ({ value: c.status, label: c.title }))}
+          options={columns.map((c) => ({
+            value: c.status,
+            label: `${c.title} (${board.data?.[c.key].length ?? 0})`,
+          }))}
           onChange={setMobileColumn}
         />
       </div>
@@ -657,6 +671,18 @@ export function Production() {
         <ErrorState error={board.error} retry={() => board.refetch()} />
       ) : (
         <DndContext
+          collisionDetection={(args) => {
+            if (!args.pointerCoordinates) return closestCenter(args);
+            const hits = pointerWithin(args);
+            // A compact destination can overlap the lane behind it.
+            const destination = hits.find(
+              (hit) =>
+                args.droppableContainers.find(
+                  (container) => container.id === hit.id,
+                )?.data.current?.allowed,
+            );
+            return destination ? [destination] : hits;
+          }}
           accessibility={{
             screenReaderInstructions: {
               draggable:

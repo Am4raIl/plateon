@@ -87,6 +87,7 @@
 }
 .control {
   width: 100%;
+  min-width: 0;
   background: var(--ink-deep);
   border: 1px solid var(--fio);
   border-radius: var(--r-ctl);
@@ -419,5 +420,46 @@ textarea.control {
   }
   .seg button {
     padding: 8px 12px;
+  }
+}
+
+.field,
+.banner,
+.toast {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.button {
+  max-width: 100%;
+}
+.seg button {
+  min-height: 44px;
+}
+@media (max-width: 900px) {
+  .toasts {
+    top: calc(16px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+}
+@media (max-width: 400px) {
+  .modal {
+    padding: 16px;
+  }
+  .backdrop {
+    padding: 12px;
+  }
+  .drawerBackdrop {
+    padding: 0;
+  }
+  .lg {
+    padding-inline: 16px;
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) {
+  .button,
+  .toast button {
+    min-height: 44px;
   }
 }
