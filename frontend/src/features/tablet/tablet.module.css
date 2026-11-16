@@ -307,12 +307,18 @@
   z-index: -1;
   pointer-events: none;
 }
-.pairing :global(.brand) {
-  justify-content: center;
-  margin-bottom: 32px;
+.pairingHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
 }
-.pairing > [role="group"] {
-  margin-bottom: 24px;
+.pairing :global(.section-label) {
+  justify-content: center;
+}
+.pairing :global(.section-label)::after {
+  display: none;
 }
 .pairing h1 {
   margin-bottom: 16px;

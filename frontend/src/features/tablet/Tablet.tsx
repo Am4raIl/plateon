@@ -292,8 +292,10 @@ export function Pairing() {
   return (
     <main id="conteudo" className="blank">
       <div className={s.pairing}>
-        <Brand />
-        <ThemeToggle />
+        <header className={s.pairingHeader}>
+          <Brand />
+          <ThemeToggle compact />
+        </header>
         <div className="section-label">Bem-vindo à casa</div>
         <h1>{expired ? "Este código venceu" : "Vamos preparar sua mesa"}</h1>
         <p>Peça a um garçom ou ao gerente para aprovar este código</p>
